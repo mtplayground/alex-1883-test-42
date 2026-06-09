@@ -1,0 +1,266 @@
+export const metadata = {
+  label: "Testing",
+  title: "Tests keep Rust behavior intentional",
+  description:
+    "Write unit tests with #[test], use assertions clearly, organize tests, and run them with Cargo."
+};
+
+## Tests are ordinary Rust functions with `#[test]`
+
+Rust's built-in test framework finds functions marked with `#[test]`, runs them, and
+reports whether they panic. A passing test is a test function that finishes without
+panicking.
+
+```rust
+fn add_minutes(current: u32, extra: u32) -> u32 {
+    current + extra
+}
+
+#[test]
+fn adds_extra_minutes() {
+    assert_eq!(add_minutes(20, 5), 25);
+}
+```
+
+The Playground runs examples as binaries, so the runnable snippets in this section call
+the same assertion logic from `main`. In a project, put the `#[test]` functions in source
+files and run them with Cargo.
+
+<RunnableSnippet title="A testable function">{`fn add_minutes(current: u32, extra: u32) -> u32 {
+    current + extra
+}
+
+fn adds_extra_minutes() {
+    assert_eq!(add_minutes(20, 5), 25);
+}
+
+fn main() {
+    adds_extra_minutes();
+    println!("test logic passed");
+}`}</RunnableSnippet>
+
+<Callout type="tip" title="Test behavior, not implementation">
+  A useful test states what the code should do from the caller's point of view.
+</Callout>
+
+## Use assertions to state expectations
+
+The most common assertion macros are `assert!`, `assert_eq!`, and `assert_ne!`.
+
+<RunnableSnippet title="Assertion macros">{`fn is_passing(score: u32) -> bool {
+    score >= 70
+}
+
+fn main() {
+    assert!(is_passing(82));
+    assert_eq!(is_passing(69), false);
+    assert_ne!(82, 69);
+
+    println!("all assertions passed");
+}`}</RunnableSnippet>
+
+`assert!` checks a boolean. `assert_eq!` and `assert_ne!` compare values and print both
+sides when the assertion fails.
+
+### Add messages when context matters
+
+Assertions can include a custom failure message. Use that when the default output would
+not explain the scenario well.
+
+<RunnableSnippet title="Assertion message">{`fn lesson_label(title: &str, minutes: u32) -> String {
+    format!("{title} ({minutes} min)")
+}
+
+fn main() {
+    let label = lesson_label("Testing", 18);
+
+    assert!(
+        label.contains("Testing"),
+        "label should include the lesson title: {label}"
+    );
+
+    println!("{label}");
+}`}</RunnableSnippet>
+
+Messages should explain the intended behavior, not just restate that the assertion failed.
+
+## Unit tests live near the code
+
+Unit tests usually live in the same file as the code they test, inside a `tests` module
+that is compiled only during tests.
+
+```rust
+pub fn slugify(title: &str) -> String {
+    title.trim().to_lowercase().replace(' ', "-")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trims_and_replaces_spaces() {
+        assert_eq!(slugify(" Rust Tests "), "rust-tests");
+    }
+}
+```
+
+`#[cfg(test)]` tells Rust to compile the module only when running tests. `use super::*`
+imports items from the parent module.
+
+<RunnableSnippet title="Unit-test shape">{`pub fn slugify(title: &str) -> String {
+    title.trim().to_lowercase().replace(' ', "-")
+}
+
+fn trims_and_replaces_spaces() {
+    assert_eq!(slugify(" Rust Tests "), "rust-tests");
+}
+
+fn main() {
+    trims_and_replaces_spaces();
+    println!("{}", slugify(" Rust Tests "));
+}`}</RunnableSnippet>
+
+The runnable version calls the assertion directly. In a real crate, the assertion belongs
+inside a `#[test]` function.
+
+## Test error paths too
+
+Good tests cover both the successful path and the failure path. This is especially useful
+for functions that return `Option` or `Result`.
+
+<RunnableSnippet title="Test Result behavior">{`fn parse_minutes(input: &str) -> Result<u32, String> {
+    let minutes = input
+        .parse::<u32>()
+        .map_err(|_| format!("not a number: {input}"))?;
+
+    if minutes == 0 {
+        Err(String::from("minutes must be positive"))
+    } else {
+        Ok(minutes)
+    }
+}
+
+fn main() {
+    assert_eq!(parse_minutes("12"), Ok(12));
+    assert_eq!(parse_minutes("0"), Err(String::from("minutes must be positive")));
+    assert!(parse_minutes("soon").is_err());
+
+    println!("success and error paths covered");
+}`}</RunnableSnippet>
+
+Testing the error path makes the function's contract clearer for future readers.
+
+## Organize integration tests in `tests/`
+
+Integration tests live outside `src/` in a top-level `tests/` directory. Each file there is
+compiled as a separate crate that uses your library the way another crate would.
+
+```text
+lesson-tools/
+├── Cargo.toml
+├── src/
+│   └── lib.rs
+└── tests/
+    └── slug_tests.rs
+```
+
+```rust
+// tests/slug_tests.rs
+use lesson_tools::slugify;
+
+#[test]
+fn builds_url_slug() {
+    assert_eq!(slugify("Rust Testing"), "rust-testing");
+}
+```
+
+Integration tests are good for public API behavior. Unit tests are better for small
+internal pieces.
+
+<Callout type="note" title="Binary crates need a library for integration tests">
+  If integration tests should call your project code, move reusable logic into `src/lib.rs`
+  and let `src/main.rs` call that library.
+</Callout>
+
+## Run tests with Cargo
+
+Cargo builds the crate in test mode and runs discovered tests.
+
+```bash
+cargo test
+cargo test slug
+cargo test -- --nocapture
+```
+
+- `cargo test` runs every test.
+- `cargo test slug` runs tests whose names contain `slug`.
+- `cargo test -- --nocapture` shows output printed during passing tests.
+
+### Ignored tests are opt-in
+
+Mark slow or environment-dependent tests with `#[ignore]`, then run them explicitly when
+needed.
+
+```rust
+#[test]
+#[ignore]
+fn calls_a_slow_external_service() {
+    // ...
+}
+```
+
+```bash
+cargo test -- --ignored
+```
+
+Use ignored tests sparingly. A test that almost never runs is easy to let drift.
+
+## Keep tests clear and focused
+
+Each test should arrange data, call the behavior, then assert the result. Small helpers can
+remove setup noise, but avoid hiding the important expectation.
+
+<RunnableSnippet title="Arrange act assert">{`#[derive(Debug, PartialEq)]
+struct Lesson {
+    title: String,
+    minutes: u32,
+}
+
+fn extend_lesson(mut lesson: Lesson, extra: u32) -> Lesson {
+    lesson.minutes += extra;
+    lesson
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Testing"),
+        minutes: 20,
+    };
+
+    let updated = extend_lesson(lesson, 5);
+
+    assert_eq!(
+        updated,
+        Lesson {
+            title: String::from("Testing"),
+            minutes: 25,
+        }
+    );
+
+    println!("updated minutes: {}", updated.minutes);
+}`}</RunnableSnippet>
+
+The test data is visible, the action is one function call, and the assertion states the
+expected value.
+
+## Try it prompts
+
+Use these edits to practice testing:
+
+- Turn a runnable assertion example into a real `#[test]` function in a local Cargo
+  project.
+- Change an expected value and read Cargo's failure output.
+- Add a test for an empty string or invalid input.
+- Split a helper into `src/lib.rs`, then call it from an integration test in `tests/`.
+- Run one test by name with `cargo test <name>`.
