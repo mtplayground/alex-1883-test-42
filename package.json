@@ -8,9 +8,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @alex-1883-test-42/web",
-    "build": "npm run build --workspace @alex-1883-test-42/web",
-    "preview": "npm run preview --workspace @alex-1883-test-42/web"
+    "dev": "npm run dev:web",
+    "dev:api": "npm run dev --workspace @alex-1883-test-42/api",
+    "dev:web": "npm run dev --workspace @alex-1883-test-42/web",
+    "build": "npm run build --workspaces",
+    "preview": "npm run preview --workspace @alex-1883-test-42/web",
+    "start:api": "npm run start --workspace @alex-1883-test-42/api"
   },
   "engines": {
     "node": ">=20"
