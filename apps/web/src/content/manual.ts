@@ -1,9 +1,15 @@
 import type { ComponentType } from "react";
 
+import ErrorsContent, { metadata as errorsMetadata } from "./errors.mdx";
+import errorsSource from "./errors.mdx?raw";
 import GettingStartedContent, {
   metadata as gettingStartedMetadata
 } from "./getting-started.mdx";
 import gettingStartedSource from "./getting-started.mdx?raw";
+import OwnershipContent, { metadata as ownershipMetadata } from "./ownership.mdx";
+import ownershipSource from "./ownership.mdx?raw";
+import TypesContent, { metadata as typesMetadata } from "./types.mdx";
+import typesSource from "./types.mdx?raw";
 import { extractHeadings, type ContentHeading } from "../lib/headings";
 
 export interface ManualSection {
@@ -18,13 +24,62 @@ export interface ManualSection {
   path: string;
 }
 
-const gettingStartedSection: ManualSection = {
+function createSection(
+  section: Omit<ManualSection, "headings"> & { source: string }
+): ManualSection {
+  return {
+    Component: section.Component,
+    headings: extractHeadings(section.source),
+    id: section.id,
+    metadata: section.metadata,
+    path: section.path
+  };
+}
+
+const gettingStartedSection = createSection({
   Component: GettingStartedContent,
-  headings: extractHeadings(gettingStartedSource),
   id: "getting-started",
   metadata: gettingStartedMetadata,
-  path: "/"
-};
+  path: "/",
+  source: gettingStartedSource
+});
 
-export const manualSections = [gettingStartedSection] satisfies ManualSection[];
+const ownershipSection = createSection({
+  Component: OwnershipContent,
+  id: "ownership",
+  metadata: ownershipMetadata,
+  path: "/ownership",
+  source: ownershipSource
+});
+
+const typesSection = createSection({
+  Component: TypesContent,
+  id: "types",
+  metadata: typesMetadata,
+  path: "/types",
+  source: typesSource
+});
+
+const errorsSection = createSection({
+  Component: ErrorsContent,
+  id: "errors",
+  metadata: errorsMetadata,
+  path: "/errors",
+  source: errorsSource
+});
+
+export const manualSections = [
+  gettingStartedSection,
+  ownershipSection,
+  typesSection,
+  errorsSection
+] satisfies ManualSection[];
 export const defaultManualSection = gettingStartedSection;
+
+export function findManualSection(sectionId: string | undefined) {
+  if (!sectionId) {
+    return defaultManualSection;
+  }
+
+  return manualSections.find((section) => section.id === sectionId);
+}

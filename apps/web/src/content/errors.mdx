@@ -1,0 +1,60 @@
+export const metadata = {
+  label: "Errors",
+  title: "Errors are values you can handle",
+  description:
+    "Model recoverable failures with Result and handle absent values with Option."
+};
+
+## Use `Option` for absence
+
+`Option<T>` represents either `Some(value)` or `None`. It is useful when a value may not
+exist.
+
+```rust
+fn first_letter(word: &str) -> Option<char> {
+    word.chars().next()
+}
+
+fn main() {
+    match first_letter("rust") {
+        Some(letter) => println!("{letter}"),
+        None => println!("empty input"),
+    }
+}
+```
+
+## Use `Result` for recoverable failure
+
+`Result<T, E>` represents either `Ok(value)` or `Err(error)`. Functions that can fail use
+this shape to make callers choose how to respond.
+
+```rust
+fn parse_port(input: &str) -> Result<u16, std::num::ParseIntError> {
+    input.parse::<u16>()
+}
+
+fn main() {
+    match parse_port("8080") {
+        Ok(port) => println!("port {port}"),
+        Err(error) => println!("invalid port: {error}"),
+    }
+}
+```
+
+### Propagate with `?`
+
+The `?` operator returns early when a `Result` is `Err`. It keeps the happy path compact
+while preserving explicit error handling.
+
+```rust
+fn parse_pair(left: &str, right: &str) -> Result<(u16, u16), std::num::ParseIntError> {
+    let first = left.parse::<u16>()?;
+    let second = right.parse::<u16>()?;
+    Ok((first, second))
+}
+```
+
+<Callout type="warning" title="Do not hide failure">
+  Avoid unwrapping recoverable errors in application code. Matching, returning Result, or
+  adding context gives callers a real path forward.
+</Callout>

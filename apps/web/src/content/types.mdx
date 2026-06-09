@@ -1,0 +1,61 @@
+export const metadata = {
+  label: "Types",
+  title: "Types describe what values can do",
+  description:
+    "Use Rust's type system to make data shape and intent visible at compile time."
+};
+
+## Scalar values
+
+Scalar types hold one value. Integers, floating-point numbers, booleans, and characters
+are common scalar types.
+
+```rust
+fn main() {
+    let count: u32 = 3;
+    let enabled: bool = true;
+    let letter: char = 'R';
+
+    println!("{count} {enabled} {letter}");
+}
+```
+
+## Compound values
+
+Compound types group values together. Tuples group fixed positions, and arrays group
+values of the same type.
+
+```rust
+fn main() {
+    let point: (i32, i32) = (10, 20);
+    let ports: [u16; 3] = [8080, 8081, 8082];
+
+    println!("x={} first_port={}", point.0, ports[0]);
+}
+```
+
+### Prefer names for domain data
+
+Structs give fields names, which makes larger values easier to read and pass between
+functions.
+
+```rust
+struct Lesson {
+    title: String,
+    minutes: u32,
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Ownership"),
+        minutes: 12,
+    };
+
+    println!("{} takes {} minutes", lesson.title, lesson.minutes);
+}
+```
+
+<Callout type="tip" title="Let inference work">
+  Add type annotations when they clarify intent or resolve ambiguity. In many local
+  bindings, Rust can infer the type from the assigned value.
+</Callout>
