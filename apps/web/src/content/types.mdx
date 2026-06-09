@@ -2,45 +2,124 @@ export const metadata = {
   label: "Types",
   title: "Types describe what values can do",
   description:
-    "Use Rust's type system to make data shape and intent visible at compile time."
+    "Use Rust's type system to choose numeric shapes, model collections, and make domain states explicit."
 };
 
-## Scalar values
+## Types make intent visible
 
-Scalar types hold one value. Integers, floating-point numbers, booleans, and characters
-are common scalar types.
+Rust checks types before a program runs. A type tells the compiler what operations are
+valid, how much space a value needs, and which mistakes should be rejected early.
 
-```rust
-fn main() {
+<RunnableSnippet title="Several basic types">{`fn main() {
     let count: u32 = 3;
     let enabled: bool = true;
     let letter: char = 'R';
 
     println!("{count} {enabled} {letter}");
-}
-```
+}`}</RunnableSnippet>
+
+<Callout type="tip" title="Let inference work">
+  Add type annotations when they clarify intent or resolve ambiguity. In many local
+  bindings, Rust can infer the type from the assigned value.
+</Callout>
+
+## Numeric type guidance
+
+Integers come in signed and unsigned forms. Signed integers such as `i32` can be negative.
+Unsigned integers such as `u32` cannot be negative. Use `usize` when indexing or counting
+items in memory because collection lengths and indexes use that type.
+
+<RunnableSnippet title="Choosing numeric types">{`fn main() {
+    let completed_lessons: u32 = 3;
+    let selected_index: usize = 1;
+    let completion_ratio: f64 = 0.75;
+    let topics = ["getting started", "ownership", "types"];
+
+    println!("completed: {completed_lessons}");
+    println!("selected topic: {}", topics[selected_index]);
+    println!("progress: {:.0}%", completion_ratio * 100.0);
+}`}</RunnableSnippet>
+
+Rust defaults integer literals to `i32` and floating-point literals to `f64` when there is
+no other context. That default is fine for many local calculations. Add a type when the
+number crosses an API boundary or represents domain data.
+
+### Convert numbers explicitly
+
+Rust does not silently widen or narrow numeric types. This prevents accidental loss of
+range or precision. Convert deliberately when two numeric types meet.
+
+<RunnableSnippet title="Explicit numeric conversion">{`fn main() {
+    let lesson_minutes: u16 = 12;
+    let review_minutes: u32 = 5;
+    let total_minutes = u32::from(lesson_minutes) + review_minutes;
+
+    println!("total: {total_minutes} minutes");
+}`}</RunnableSnippet>
+
+<Callout type="warning" title="Do not mix numeric types casually">
+  If a calculation fails because the numeric types differ, decide which type should own
+  the result. Avoid changing annotations randomly until the compiler is quiet.
+</Callout>
 
 ## Compound values
 
-Compound types group values together. Tuples group fixed positions, and arrays group
-values of the same type.
+Compound types group values together. Tuples group fixed positions, and arrays group a
+fixed number of values of the same type.
 
-```rust
-fn main() {
+<RunnableSnippet title="Tuples and arrays">{`fn main() {
     let point: (i32, i32) = (10, 20);
     let ports: [u16; 3] = [8080, 8081, 8082];
 
     println!("x={} first_port={}", point.0, ports[0]);
-}
-```
+}`}</RunnableSnippet>
 
-### Prefer names for domain data
+Tuples are useful for small, local groupings. Arrays are useful when the number of items is
+known at compile time.
+
+## Vectors grow at runtime
+
+Use `Vec<T>` when you need a list whose length can change. Every item in a vector has the
+same type.
+
+<RunnableSnippet title="Build a vector">{`fn main() {
+    let mut topics: Vec<String> = Vec::new();
+
+    topics.push(String::from("getting started"));
+    topics.push(String::from("ownership"));
+    topics.push(String::from("types"));
+
+    for topic in &topics {
+        println!("{topic}");
+    }
+}`}</RunnableSnippet>
+
+The `&topics` borrow lets the loop read the vector without taking ownership of it. The
+vector remains available after the loop.
+
+### Start with `vec!` when values are known
+
+The `vec!` macro creates a vector with initial values and lets Rust infer the item type.
+
+<RunnableSnippet title="Vector with initial values">{`fn main() {
+    let minutes = vec![8, 12, 18];
+    let total: i32 = minutes.iter().sum();
+
+    println!("total minutes: {total}");
+    println!("lesson count: {}", minutes.len());
+}`}</RunnableSnippet>
+
+<Callout type="note" title="Vector item type">
+  A `Vec<String>` owns strings. A `Vec<&str>` stores borrowed string slices. Choose the one
+  that matches who owns the text.
+</Callout>
+
+## Structs name fields
 
 Structs give fields names, which makes larger values easier to read and pass between
 functions.
 
-```rust
-struct Lesson {
+<RunnableSnippet title="A small struct">{`struct Lesson {
     title: String,
     minutes: u32,
 }
@@ -52,10 +131,75 @@ fn main() {
     };
 
     println!("{} takes {} minutes", lesson.title, lesson.minutes);
-}
-```
+}`}</RunnableSnippet>
 
-<Callout type="tip" title="Let inference work">
-  Add type annotations when they clarify intent or resolve ambiguity. In many local
-  bindings, Rust can infer the type from the assigned value.
+## Enums model choices
+
+An enum lists the valid shapes a value can take. This is useful when a value is one of a
+known set of states.
+
+<RunnableSnippet title="Enum states">{`enum LessonStatus {
+    Planned,
+    InProgress { minutes_spent: u32 },
+    Complete,
+}
+
+fn describe(status: LessonStatus) -> String {
+    match status {
+        LessonStatus::Planned => String::from("planned"),
+        LessonStatus::InProgress { minutes_spent } => {
+            format!("in progress for {minutes_spent} minutes")
+        }
+        LessonStatus::Complete => String::from("complete"),
+    }
+}
+
+fn main() {
+    let statuses = [
+        LessonStatus::Planned,
+        LessonStatus::InProgress { minutes_spent: 10 },
+        LessonStatus::Complete,
+    ];
+
+    for status in statuses {
+        println!("{}", describe(status));
+    }
+}`}</RunnableSnippet>
+
+`match` forces you to handle every variant. When you add a new variant later, the compiler
+points at the places that need updated logic.
+
+<Callout type="tip" title="Use enums for named states">
+  If a string can only be `"planned"`, `"in_progress"`, or `"complete"`, an enum is usually
+  clearer. It keeps invalid states out of the program.
 </Callout>
+
+## Type aliases name a meaning
+
+A type alias gives an existing type a domain-specific name. It does not create a new,
+separate type, but it can make signatures easier to read.
+
+<RunnableSnippet title="Aliases for intent">{`type Minutes = u32;
+type LessonTitle = String;
+
+fn estimate(title: &str, base: Minutes) -> (LessonTitle, Minutes) {
+    let extra_review: Minutes = 5;
+    (String::from(title), base + extra_review)
+}
+
+fn main() {
+    let (title, minutes) = estimate("Types", 18);
+    println!("{title}: {minutes} minutes");
+}`}</RunnableSnippet>
+
+Aliases are most helpful when the original type is correct but too generic for the
+surrounding code.
+
+## Try it prompts
+
+Use these edits to practice reading type feedback:
+
+- Change `selected_index` to `u32` and read why array indexing expects `usize`.
+- Add another `topics.push(...)` call to the vector example.
+- Add a `Skipped` variant to `LessonStatus`, then update `describe`.
+- Rename `Minutes` to `LessonMinutes` and confirm the code still behaves the same.
