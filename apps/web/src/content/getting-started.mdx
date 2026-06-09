@@ -2,7 +2,7 @@ export const metadata = {
   label: "Getting started",
   title: "Start with a small Rust program",
   description:
-    "Begin with the shape of an executable Rust file and a few terms that appear throughout the manual."
+    "Learn the shape of an executable Rust file, how statements and expressions differ, and how to read compiler feedback."
 };
 
 ## Start from `main`
@@ -15,15 +15,174 @@ braces, and each statement inside the body runs from top to bottom.
   ownership, values, and output when the program has one visible job.
 </Callout>
 
-## Example source
+## Your first runnable program
 
-<RunnableSnippet>{`fn main() {
-    let topic = "ownership";
-    println!("Next lesson: {topic}");
+The smallest useful program has a function, a binding, and one line of formatted output.
+Run it once, then change the lesson name or the number of minutes.
+
+<RunnableSnippet title="First Rust program">{`fn main() {
+    let lesson = "ownership";
+    let minutes = 12;
+
+    println!("Next lesson: {lesson} ({minutes} minutes)");
 }`}</RunnableSnippet>
 
-## Reading the snippet
+### Reading the snippet
 
-- `let` binds a local value.
-- `topic` is the local name.
+- `fn main()` defines the entry point for an executable program.
+- `let` creates a local binding.
+- `lesson` and `minutes` are local names.
 - `println!` writes formatted text to standard output.
+
+<Callout type="note" title="Macro syntax">
+  The exclamation point in `println!` means this is a macro call. For now, treat it as the
+  standard way to print a line while you are experimenting.
+</Callout>
+
+## Statements and expressions
+
+Rust distinguishes statements from expressions. A statement does work and usually ends
+with a semicolon. An expression produces a value.
+
+```rust
+let minutes = 12; // statement
+minutes + 3       // expression
+```
+
+This matters most in function bodies and blocks. The last expression in a block can become
+the block's value when it does not end with a semicolon.
+
+<RunnableSnippet title="Expression result">{`fn add_review_time(minutes: i32) -> i32 {
+    let review = 5;
+    minutes + review
+}
+
+fn main() {
+    let total = add_review_time(12);
+    println!("plan for {total} minutes");
+}`}</RunnableSnippet>
+
+If you add a semicolon after `minutes + review`, the function no longer returns that
+number. The compiler will point at the mismatch.
+
+<Callout type="tip" title="Try it">
+  Add a semicolon after the final line in `add_review_time`, run the snippet, and read the
+  compiler message. Then remove the semicolon so the function returns the expression again.
+</Callout>
+
+## Blocks can produce values
+
+A block wrapped in braces can also be an expression. This is useful when a value needs a
+few preparation steps but should still be assigned once.
+
+<RunnableSnippet title="Block expression">{`fn main() {
+    let minutes = {
+        let reading = 8;
+        let practice = 10;
+        reading + practice
+    };
+
+    println!("total practice time: {minutes} minutes");
+}`}</RunnableSnippet>
+
+The inner `reading` and `practice` bindings belong to the block. The outer `minutes`
+binding receives the block's final expression.
+
+## Formatting output
+
+Rust formatting keeps output templates close to the values they display. Named captures
+like `{topic}` and `{minutes}` are usually the clearest option for small examples.
+
+<RunnableSnippet title="Formatted output">{`fn main() {
+    let topic = "types";
+    let minutes = 18;
+    let completed = false;
+
+    println!("Topic: {topic}");
+    println!("Length: {minutes} minutes");
+    println!("Completed? {completed}");
+}`}</RunnableSnippet>
+
+Use `{:?}` when you want a quick debug view of a value that implements `Debug`, such as a
+tuple or array.
+
+<RunnableSnippet title="Debug formatting">{`fn main() {
+    let checkpoint = ("getting started", 3, true);
+    let steps = ["write", "run", "revise"];
+
+    println!("checkpoint: {:?}", checkpoint);
+    println!("steps: {:?}", steps);
+}`}</RunnableSnippet>
+
+<Callout type="warning" title="Do not guess output">
+  When a value prints differently than expected, change one line and run again. Tight
+  feedback loops are more useful than trying to memorize every formatting rule up front.
+</Callout>
+
+## The compiler workflow
+
+A normal Rust feedback loop has four steps:
+
+1. Write a small change.
+2. Compile the program.
+3. Read the first compiler message.
+4. Run again after one fix.
+
+With `rustc`, the command line version looks like this:
+
+```bash
+rustc main.rs
+./main
+```
+
+Most real projects use Cargo, Rust's package and build tool:
+
+```bash
+cargo new hello-rust
+cd hello-rust
+cargo run
+```
+
+The playground in this manual gives you the same core loop in the browser: edit, run, read
+stdout or compiler output, then revise.
+
+<RunnableSnippet title="Workflow as data">{`fn main() {
+    let steps = ["write", "compile", "read", "revise"];
+
+    for (index, step) in steps.iter().enumerate() {
+        println!("{}. {step}", index + 1);
+    }
+}`}</RunnableSnippet>
+
+### Read the first useful error
+
+Compiler output can look long because Rust includes context. Start with the first error
+line, then read the note or help text below it. Fix one thing at a time.
+
+<Callout type="note" title="Error messages are part of the workflow">
+  Rust's compiler is strict, but its messages are designed to teach. If a suggestion
+  mentions a type, a borrow, or a missing semicolon, connect that word back to the code you
+  just changed.
+</Callout>
+
+## Try it prompts
+
+Use these quick edits to build confidence before moving to the next section:
+
+- Change a string value and run again.
+- Add a new `let` binding and include it in `println!`.
+- Turn a final expression into a statement by adding `;`, then read the compiler output.
+- Use `{:?}` to print an array of lesson names.
+
+<RunnableSnippet title="Practice prompt">{`fn main() {
+    let current = "getting started";
+    let next = "ownership";
+    let checkpoints = ["main", "let", "println!", "expressions"];
+
+    println!("Current section: {current}");
+    println!("Next section: {next}");
+    println!("Checkpoints: {:?}", checkpoints);
+}`}</RunnableSnippet>
+
+When this program feels readable, continue to Ownership. The next section explains how
+Rust decides which binding is responsible for a value.
