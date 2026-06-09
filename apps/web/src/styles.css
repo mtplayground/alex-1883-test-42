@@ -53,4 +53,13 @@ body {
   .manual-content a {
     @apply font-medium text-rust-600 underline decoration-rust-600/30 underline-offset-4 dark:text-rust-500;
   }
+
+  .rust-code-editor .cm-editor {
+    @apply font-mono;
+  }
+
+  .rust-code-editor .cm-focused {
+    outline: 2px solid theme("colors.rust.500");
+    outline-offset: -2px;
+  }
 }
