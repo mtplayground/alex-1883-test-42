@@ -2,34 +2,85 @@ export const metadata = {
   label: "Errors",
   title: "Errors are values you can handle",
   description:
-    "Model recoverable failures with Result and handle absent values with Option."
+    "Model absence with Option, recoverable failure with Result, and keep useful context near the error."
 };
+
+## Errors are part of the type
+
+Rust does not use exceptions for ordinary recoverable problems. Instead, functions return
+values that describe what happened. The two most common shapes are `Option<T>` and
+`Result<T, E>`.
+
+<Callout type="tip" title="Read the return type">
+  If a function returns `Option`, it may have no value. If it returns `Result`, it may fail
+  and explain why.
+</Callout>
 
 ## Use `Option` for absence
 
-`Option<T>` represents either `Some(value)` or `None`. It is useful when a value may not
-exist.
+`Option<T>` represents either `Some(value)` or `None`. Use it when a value may not exist
+and there is no extra failure detail to report.
 
-```rust
-fn first_letter(word: &str) -> Option<char> {
+<RunnableSnippet title="Match on Option">{`fn first_letter(word: &str) -> Option<char> {
     word.chars().next()
 }
 
 fn main() {
     match first_letter("rust") {
-        Some(letter) => println!("{letter}"),
+        Some(letter) => println!("first letter: {letter}"),
         None => println!("empty input"),
     }
+}`}</RunnableSnippet>
+
+`Some(letter)` gives you the value inside the option. `None` handles the absent case.
+
+### Provide a fallback
+
+When absence has a sensible default, use methods such as `unwrap_or` or `unwrap_or_else`.
+These are different from `unwrap`: they give the program a planned fallback.
+
+<RunnableSnippet title="Option fallback">{`fn display_name(input: Option<&str>) -> &str {
+    input.unwrap_or("anonymous learner")
 }
-```
+
+fn main() {
+    println!("{}", display_name(Some("Ferris")));
+    println!("{}", display_name(None));
+}`}</RunnableSnippet>
+
+<Callout type="warning" title="Avoid blind unwrap">
+  `unwrap` is useful in tiny experiments, but application code usually needs a real path
+  for the missing or failing case.
+</Callout>
+
+## Use `if let` for one interesting case
+
+Use `match` when every branch deserves attention. Use `if let` when one case is the main
+path and the other case can be short.
+
+<RunnableSnippet title="if let with Option">{`fn first_word(sentence: &str) -> Option<&str> {
+    sentence.split_whitespace().next()
+}
+
+fn main() {
+    let sentence = "errors are values";
+
+    if let Some(word) = first_word(sentence) {
+        println!("first word: {word}");
+    } else {
+        println!("no words found");
+    }
+}`}</RunnableSnippet>
+
+`if let` still handles both outcomes here, but it keeps the successful branch visually
+prominent.
 
 ## Use `Result` for recoverable failure
 
-`Result<T, E>` represents either `Ok(value)` or `Err(error)`. Functions that can fail use
-this shape to make callers choose how to respond.
+`Result<T, E>` represents either `Ok(value)` or `Err(error)`. Use it when a caller needs to
+know why an operation failed.
 
-```rust
-fn parse_port(input: &str) -> Result<u16, std::num::ParseIntError> {
+<RunnableSnippet title="Match on Result">{`fn parse_port(input: &str) -> Result<u16, std::num::ParseIntError> {
     input.parse::<u16>()
 }
 
@@ -38,23 +89,117 @@ fn main() {
         Ok(port) => println!("port {port}"),
         Err(error) => println!("invalid port: {error}"),
     }
-}
-```
+}`}</RunnableSnippet>
 
-### Propagate with `?`
+The error type is part of the signature. Here, parsing can fail with
+`std::num::ParseIntError`.
+
+## Propagate with `?`
 
 The `?` operator returns early when a `Result` is `Err`. It keeps the happy path compact
 while preserving explicit error handling.
 
-```rust
-fn parse_pair(left: &str, right: &str) -> Result<(u16, u16), std::num::ParseIntError> {
+<RunnableSnippet title="Propagate parse errors">{`fn parse_pair(left: &str, right: &str) -> Result<(u16, u16), std::num::ParseIntError> {
     let first = left.parse::<u16>()?;
     let second = right.parse::<u16>()?;
     Ok((first, second))
 }
-```
 
-<Callout type="warning" title="Do not hide failure">
-  Avoid unwrapping recoverable errors in application code. Matching, returning Result, or
-  adding context gives callers a real path forward.
+fn main() {
+    match parse_pair("80", "443") {
+        Ok((http, https)) => println!("http={http} https={https}"),
+        Err(error) => println!("invalid pair: {error}"),
+    }
+}`}</RunnableSnippet>
+
+Use `?` inside functions that also return `Result` or another compatible type. It does not
+hide failure; it moves failure handling to the caller.
+
+## Return `Result` from `main`
+
+Small examples often handle errors inside `main`, but `main` can also return `Result`.
+That lets `?` work at the top level.
+
+<RunnableSnippet title="main returns Result">{`fn parse_minutes(input: &str) -> Result<u32, std::num::ParseIntError> {
+    input.parse::<u32>()
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let minutes = parse_minutes("18")?;
+    println!("lesson takes {minutes} minutes");
+    Ok(())
+}`}</RunnableSnippet>
+
+`Ok(())` means the program finished successfully. If `?` returns an error, Rust prints it
+and exits with a nonzero status.
+
+<Callout type="note" title="Why Box<dyn Error>?">
+  `Box<dyn std::error::Error>` is a flexible beginner-friendly return type for examples
+  where different error kinds may be propagated from `main`.
 </Callout>
+
+## Add context near the failure
+
+Raw errors can be accurate but incomplete. Adding context tells the caller what the program
+was trying to do when the failure happened.
+
+<RunnableSnippet title="Add error context">{`fn parse_required_minutes(input: Option<&str>) -> Result<u32, String> {
+    let raw = input.ok_or_else(|| String::from("missing lesson minutes"))?;
+
+    raw.parse::<u32>()
+        .map_err(|error| format!("invalid lesson minutes {raw:?}: {error}"))
+}
+
+fn main() {
+    for input in [Some("12"), Some("soon"), None] {
+        match parse_required_minutes(input) {
+            Ok(minutes) => println!("minutes: {minutes}"),
+            Err(error) => println!("error: {error}"),
+        }
+    }
+}`}</RunnableSnippet>
+
+This example converts absence into a `Result` with `ok_or_else`, then converts the parse
+error into a message that includes the original input.
+
+<Callout type="tip" title="Context should answer where">
+  Good context says what failed from the caller's perspective: parsing lesson minutes,
+  opening a config file, or finding a requested section.
+</Callout>
+
+## Choose `Option` or `Result`
+
+Use `Option` when absence is expected and no explanation is needed. Use `Result` when the
+caller needs a reason or a recovery path.
+
+<RunnableSnippet title="Option vs Result">{`fn find_topic<'a>(topics: &'a [&str], query: &str) -> Option<&'a str> {
+    topics.iter().copied().find(|topic| *topic == query)
+}
+
+fn require_topic<'a>(topics: &'a [&str], query: &str) -> Result<&'a str, String> {
+    find_topic(topics, query).ok_or_else(|| format!("unknown topic: {query}"))
+}
+
+fn main() {
+    let topics = ["ownership", "types", "errors"];
+
+    println!("optional lookup: {:?}", find_topic(&topics, "types"));
+
+    match require_topic(&topics, "lifetimes") {
+        Ok(topic) => println!("required topic: {topic}"),
+        Err(error) => println!("{error}"),
+    }
+}`}</RunnableSnippet>
+
+The lookup helper uses `Option` because not finding a topic is just absence. The required
+helper uses `Result` because the caller asked for a value that must exist.
+
+## Try it prompts
+
+Use these edits to practice error handling:
+
+- Change `"8080"` to `"eight"` in the port example and read the error.
+- Remove `else` from the `if let` example and decide whether that is acceptable.
+- Change `"18"` to `"many"` in the `main -> Result` example.
+- Add another missing required field to the context example.
+- Convert an `Option` helper into a `Result` helper when the caller needs an explanation.
