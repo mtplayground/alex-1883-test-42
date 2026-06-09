@@ -3,16 +3,23 @@ import CodeMirror from "@uiw/react-codemirror";
 import { LoaderCircle, Play } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { RunApiError, runRustCode } from "../../api/run";
+import { RunApiError, runRustCode, type RunCodeRequest } from "../../api/run";
 import { useTheme } from "../../theme/themeContext";
 import { PlaygroundOutputPanel, type PlaygroundRunState } from "./PlaygroundOutputPanel";
 
 export interface RustCodeEditorProps {
   initialCode: string;
-  onRun?: (code: string) => void;
+  onRun?: (code: string, request: RunCodeRequest) => void;
+  runOptions?: Omit<RunCodeRequest, "code">;
+  title?: string;
 }
 
-export function RustCodeEditor({ initialCode, onRun }: RustCodeEditorProps) {
+export function RustCodeEditor({
+  initialCode,
+  onRun,
+  runOptions = {},
+  title = "Rust editor"
+}: RustCodeEditorProps) {
   const { theme } = useTheme();
   const [code, setCode] = useState(initialCode);
   const [runState, setRunState] = useState<PlaygroundRunState>({ status: "idle" });
@@ -35,10 +42,14 @@ export function RustCodeEditor({ initialCode, onRun }: RustCodeEditorProps) {
     abortController.current?.abort();
     const controller = new AbortController();
     abortController.current = controller;
+    const request = {
+      ...runOptions,
+      code
+    };
     setRunState({ status: "loading" });
 
     try {
-      onRun?.(code);
+      onRun?.(code, request);
     } catch (error) {
       console.error("Run callback failed", error);
     }
@@ -46,13 +57,13 @@ export function RustCodeEditor({ initialCode, onRun }: RustCodeEditorProps) {
     window.dispatchEvent(
       new CustomEvent("rust-manual:run", {
         detail: {
-          code
+          request
         }
       })
     );
 
     try {
-      const result = await runRustCode({ code }, { signal: controller.signal });
+      const result = await runRustCode(request, { signal: controller.signal });
 
       if (abortController.current === controller) {
         setRunState({ result, status: "success" });
@@ -76,13 +87,13 @@ export function RustCodeEditor({ initialCode, onRun }: RustCodeEditorProps) {
         abortController.current = null;
       }
     }
-  }, [canRun, code, isRunning, onRun]);
+  }, [canRun, code, isRunning, onRun, runOptions]);
 
   return (
     <section className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
       <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 dark:border-stone-700">
         <p className="mt-0 text-sm font-semibold text-ink-950 dark:text-stone-100">
-          Rust editor
+          {title}
         </p>
         <button
           type="button"

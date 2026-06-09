@@ -2,6 +2,7 @@ import { Children, type ComponentPropsWithoutRef } from "react";
 
 import { Callout } from "../components/content/Callout";
 import { CodeBlock } from "../components/content/CodeBlock";
+import { RunnableSnippet } from "../components/playground/RunnableSnippet";
 import { RustCodeEditor } from "../components/playground/RustCodeEditor";
 import { slugifyHeading } from "../lib/headings";
 import { textFromNode } from "../lib/reactText";
@@ -27,6 +28,7 @@ function createHeading(level: 2 | 3) {
 
 export const mdxComponents = {
   Callout,
+  RunnableSnippet,
   RustCodeEditor,
   h2: createHeading(2),
   h3: createHeading(3),
