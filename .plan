@@ -1,48 +1,40 @@
-Architecture plan for issues #1-#18
+Architecture plan for issues #37-#45
 
-Product context
-- The repository currently contains only README.md and no PRODUCT.md.
-- The issues describe a React + Tailwind SPA manual for Rust learners with embedded runnable Rust Playground examples through a Node.js/Express proxy.
+Project shape
+- Product: Rust Learning Manual, a Vite/React/Tailwind MDX learning site with an Express `/run` proxy for runnable Rust snippets.
+- Frontend: `apps/web`.
+  - Manual content lives in `apps/web/src/content/*.mdx`.
+  - Section registration and navigation data live in `apps/web/src/content/manual.ts`.
+  - Shared MDX components are wired through `apps/web/src/content/mdxComponents.tsx`.
+  - Reusable presentation components live under `apps/web/src/components/content`.
+  - Runnable playground UI lives under `apps/web/src/components/playground`.
+- Backend: `apps/api`.
+  - Keep the existing `/run` proxy and rate-limited validation behavior unchanged unless a later content issue exposes an actual compatibility problem.
+  - Content issues should call the existing frontend run client through `RunnableSnippet`; the browser should not call the Rust Playground directly.
 
-Module structure
-- Use a TypeScript monorepo-style layout:
-  - package.json, tsconfig.base.json, eslint/prettier config at the root.
-  - apps/web: Vite React SPA, Tailwind config, MDX pipeline, routes/layout, content rendering, editor, output panel, tests.
-  - apps/api: Express proxy service, env loading, middleware, routes, Playground client, tests.
-  - packages/shared: shared TypeScript contracts for run requests/responses, normalized errors, validation constants, and content metadata types.
-- Frontend organization:
-  - apps/web/src/app for application shell, routing, providers, theme setup.
-  - apps/web/src/content for MDX files and generated/declared content metadata.
-  - apps/web/src/components/content for reusable MDX primitives such as callouts and copyable code blocks.
-  - apps/web/src/components/playground for editor, run button, output panel, and MDX embed wrapper.
-  - apps/web/src/lib for API client, heading extraction helpers, and test utilities.
-- Backend organization:
-  - apps/api/src/server.ts for process bootstrap.
-  - apps/api/src/app.ts for Express app construction.
-  - apps/api/src/config.ts for environment parsing.
-  - apps/api/src/middleware for logging, CORS, rate limiting, and error handling.
-  - apps/api/src/routes/run.ts and health.ts for route modules.
-  - apps/api/src/services/rustPlaygroundClient.ts for upstream integration.
-  - apps/api/src/validation/runRequest.ts for request validation and code-size caps.
+Issue sequencing
+- #37-#40 deepen the four existing sections:
+  - `getting-started.mdx`
+  - `ownership.mdx`
+  - `types.mdx`
+  - `errors.mdx`
+- #41-#45 add new sections:
+  - `structs-traits.mdx`
+  - `collections-iterators.mdx`
+  - `modules-crates.mdx`
+  - `lifetimes.mdx`
+  - `testing.mdx`
+- Each new section must be imported and registered in `manual.ts` with stable `id`, `path`, metadata, heading extraction source, and navigation order.
+- #44 should build conceptually on the expanded Ownership section, but implementation remains isolated to a new MDX file plus navigation registration.
 
-Shared types
-- Define RunRequest with source code and future-safe optional fields such as channel, edition, mode, and crateType if later needed.
-- Define RunResult with status, stdout, stderr, compilerOutput, and optional duration/upstream metadata.
-- Define ApiError with stable code, message, and optional details so frontend error states and tests do not depend on raw upstream responses.
-- Keep max code size, timeout defaults, and accepted request fields centralized in shared constants where both API and frontend need them.
+Content conventions
+- Use MDX metadata exports with `label`, `title`, and `description`.
+- Prefer `RunnableSnippet` for examples that should execute in the inline playground.
+- Keep non-runnable examples in fenced Rust code blocks so `CodeBlock` provides copy controls.
+- Use `Callout` for notes, tips, warnings, and conceptual guardrails instead of one-off markup.
+- Keep examples beginner-oriented, compile-ready, and small enough for the existing `/run` size caps.
+- Avoid introducing persistence, uploads, auth flows, or new backend routes for these content-only issues.
 
-Dependencies between issues
-- Foundation: #1 creates apps/web; #2 creates apps/api; #3 adds shared TypeScript, linting, and formatting after both app skeletons exist; #4 adds backend/frontend env conventions.
-- Content system: #5 MDX rendering depends on the web app; #6 layout/navigation and #7 theme/content components depend on MDX; #8 seeds content after navigation and components exist.
-- Playground backend: #9 implements the upstream Rust Playground client after the API skeleton; #10 exposes /run using validation and shared contracts; #11 hardens rate limiting and upstream error handling.
-- Playground frontend: #12 adds the editor after the web app; #13 adds the /run client and output panel after the backend endpoint exists; #14 wires the complete playground into MDX after MDX and frontend playground pieces exist.
-- Tests and release readiness: #15 tests the proxy after validation/rate limiting/upstream handling; #16 tests key frontend states; #17 verifies edit-run-output end to end after MDX embed and API path exist; #18 finalizes error-state review, env docs, and self-hosted deployment notes.
-
-Key design decisions
-- Prefer Vite + React + Tailwind for the SPA to match the issue scope and keep local builds fast.
-- Keep the Express service as a separate app instead of mixing it into the frontend dev server; this mirrors the production boundary around the Rust Playground proxy.
-- Use MDX as content source of truth and derive section navigation/table of contents from content metadata/headings rather than maintaining duplicated navigation config.
-- Use CodeMirror for Rust editing because it is lighter than Monaco and fits embedded examples well.
-- Normalize all /run responses in the backend so the UI handles a small stable contract across success, compile errors, timeouts, rate limits, and upstream failures.
-- Validate and cap request size before calling the upstream Playground, then apply per-client rate limits in middleware for predictable failure modes.
-- Keep tests close to behavior: API tests mock Playground responses; frontend tests cover editor/output/client states; the end-to-end test exercises the integrated edit-to-output flow.
+Validation expectations
+- For content-only changes, run at least typecheck/build; run frontend tests or E2E when changing component usage patterns or runnable snippet behavior.
+- When adding a section, verify the sidebar navigation and in-page table of contents show the new headings.
