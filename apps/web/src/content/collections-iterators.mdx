@@ -1,0 +1,209 @@
+export const metadata = {
+  label: "Collections & iterators",
+  title: "Collections and iterators organize many values",
+  description:
+    "Use Vec and HashMap for growable data, then transform collections with iterator adapters like map, filter, and collect."
+};
+
+## Collections hold related values
+
+Collections are data structures that hold more than one value. The two most common
+collections for everyday Rust are `Vec<T>` for ordered lists and `HashMap<K, V>` for
+key-value lookup.
+
+<Callout type="tip" title="Pick by access pattern">
+  Use a vector when order matters or you need to visit every item. Use a hash map when you
+  need to look values up by a key.
+</Callout>
+
+## Use `Vec<T>` for ordered lists
+
+A vector stores values of one type and can grow while the program runs.
+
+<RunnableSnippet title="Build a Vec">{`fn main() {
+    let mut topics: Vec<String> = Vec::new();
+
+    topics.push(String::from("ownership"));
+    topics.push(String::from("types"));
+    topics.push(String::from("errors"));
+
+    println!("lesson count: {}", topics.len());
+
+    for topic in &topics {
+        println!("{topic}");
+    }
+}`}</RunnableSnippet>
+
+The loop borrows `&topics`, so the vector is still available after iteration.
+
+### Start with `vec!` for known values
+
+When the initial values are known, `vec!` is shorter and lets Rust infer the item type.
+
+<RunnableSnippet title="Start with vec!">{`fn main() {
+    let minutes = vec![8, 12, 18, 24];
+    let total: i32 = minutes.iter().sum();
+
+    println!("total minutes: {total}");
+    println!("average: {}", total / minutes.len() as i32);
+}`}</RunnableSnippet>
+
+<Callout type="note" title="Borrow or consume">
+  `iter()` borrows items. `into_iter()` consumes the collection and yields owned items when
+  ownership is available.
+</Callout>
+
+## Use `HashMap` for lookup
+
+`HashMap<K, V>` stores values by key. Import it from the standard library before using it.
+
+<RunnableSnippet title="Insert and read a HashMap">{`use std::collections::HashMap;
+
+fn main() {
+    let mut minutes_by_topic = HashMap::new();
+
+    minutes_by_topic.insert("ownership", 24);
+    minutes_by_topic.insert("types", 18);
+    minutes_by_topic.insert("errors", 20);
+
+    if let Some(minutes) = minutes_by_topic.get("types") {
+        println!("types takes {minutes} minutes");
+    }
+}`}</RunnableSnippet>
+
+`get` returns `Option<&V>` because the key may be absent.
+
+### Count with `entry`
+
+The `entry` API is useful when inserting a default value and then updating it.
+
+<RunnableSnippet title="Count repeated topics">{`use std::collections::HashMap;
+
+fn main() {
+    let visits = ["types", "ownership", "types", "errors", "types"];
+    let mut counts: HashMap<&str, u32> = HashMap::new();
+
+    for topic in visits {
+        let count = counts.entry(topic).or_insert(0);
+        *count += 1;
+    }
+
+    for (topic, count) in &counts {
+        println!("{topic}: {count}");
+    }
+}`}</RunnableSnippet>
+
+Hash maps do not keep insertion order. If output order matters, sort the keys or use a
+different structure.
+
+## Iterators describe a sequence
+
+An iterator produces values one at a time. Many collection methods return iterators, and
+iterator adapters build new iterator pipelines.
+
+<RunnableSnippet title="Iterate without changing data">{`fn main() {
+    let topics = vec!["ownership", "types", "errors"];
+
+    for topic in topics.iter() {
+        println!("read {topic}");
+    }
+
+    println!("still have {} topics", topics.len());
+}`}</RunnableSnippet>
+
+`iter()` borrows each item. That is the right default when you only need to inspect a
+collection.
+
+## Transform with `map`
+
+`map` converts each item into another value. It is lazy, so nothing runs until the iterator
+is consumed by a loop, `collect`, `sum`, or another consuming method.
+
+<RunnableSnippet title="Map values">{`fn main() {
+    let topics = vec!["ownership", "types", "errors"];
+
+    let labels: Vec<String> = topics
+        .iter()
+        .map(|topic| format!("Lesson: {topic}"))
+        .collect();
+
+    for label in labels {
+        println!("{label}");
+    }
+}`}</RunnableSnippet>
+
+The closure receives each borrowed topic and returns a new `String`.
+
+## Keep items with `filter`
+
+`filter` keeps only items that match a condition.
+
+<RunnableSnippet title="Filter values">{`fn main() {
+    let minutes = vec![8, 12, 18, 24];
+
+    let longer_lessons: Vec<i32> = minutes
+        .iter()
+        .copied()
+        .filter(|minutes| *minutes >= 15)
+        .collect();
+
+    println!("{:?}", longer_lessons);
+}`}</RunnableSnippet>
+
+`copied()` turns borrowed integers into owned integers. That lets the collected vector own
+its values.
+
+## Collect into a new collection
+
+`collect` turns an iterator into a collection. The target type often needs an annotation so
+Rust knows what to build.
+
+<RunnableSnippet title="Collect into HashMap">{`use std::collections::HashMap;
+
+fn main() {
+    let pairs = [("ownership", 24), ("types", 18), ("errors", 20)];
+    let schedule: HashMap<&str, i32> = pairs.into_iter().collect();
+
+    println!("types minutes: {:?}", schedule.get("types"));
+}`}</RunnableSnippet>
+
+The iterator yields `(key, value)` pairs, and `collect` builds a hash map from them.
+
+## Chain adapters for readable data flow
+
+Short iterator chains can read like a pipeline: start with values, transform them, keep the
+ones you need, then collect the result.
+
+<RunnableSnippet title="Map filter collect">{`fn main() {
+    let lessons = vec![
+        ("ownership", 24),
+        ("types", 18),
+        ("errors", 20),
+        ("structs", 28),
+    ];
+
+    let labels: Vec<String> = lessons
+        .iter()
+        .filter(|(_, minutes)| *minutes >= 20)
+        .map(|(topic, minutes)| format!("{topic}: {minutes} minutes"))
+        .collect();
+
+    for label in labels {
+        println!("{label}");
+    }
+}`}</RunnableSnippet>
+
+<Callout type="warning" title="Keep chains readable">
+  If an iterator chain needs several comments to explain it, split part of the logic into a
+  named function or an ordinary loop.
+</Callout>
+
+## Try it prompts
+
+Use these edits to practice collections and iterators:
+
+- Add another topic to the first vector example.
+- Change the hash map lookup from `"types"` to a missing key and handle `None`.
+- Replace `iter()` with `into_iter()` in a small example and watch what ownership changes.
+- Add a second `filter` to the adapter chain.
+- Collect labels into a `Vec<&str>` when no new strings are needed.
