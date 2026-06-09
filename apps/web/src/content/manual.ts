@@ -24,6 +24,10 @@ import StructsTraitsContent, {
   metadata as structsTraitsMetadata
 } from "./structs-traits.mdx";
 import structsTraitsSource from "./structs-traits.mdx?manual-raw";
+import TestingContent, {
+  metadata as testingMetadata
+} from "./testing.mdx";
+import testingSource from "./testing.mdx?manual-raw";
 import TypesContent, { metadata as typesMetadata } from "./types.mdx";
 import typesSource from "./types.mdx?manual-raw";
 import { extractHeadings, type ContentHeading } from "../lib/headings";
@@ -108,6 +112,14 @@ const modulesCratesSection = createSection({
   source: modulesCratesSource
 });
 
+const testingSection = createSection({
+  Component: TestingContent,
+  id: "testing",
+  metadata: testingMetadata,
+  path: "/testing",
+  source: testingSource
+});
+
 const errorsSection = createSection({
   Component: ErrorsContent,
   id: "errors",
@@ -124,6 +136,7 @@ export const manualSections = [
   structsTraitsSection,
   collectionsIteratorsSection,
   modulesCratesSection,
+  testingSection,
   errorsSection
 ] satisfies ManualSection[];
 export const defaultManualSection = gettingStartedSection;
