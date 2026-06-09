@@ -1,0 +1,257 @@
+export const metadata = {
+  label: "Lifetimes",
+  title: "Lifetimes explain how long borrows stay valid",
+  description:
+    "Connect references to the data they borrow, read lifetime annotations in signatures, and handle common borrow-checker scenarios."
+};
+
+## Lifetimes are the reach of a reference
+
+A lifetime is the part of the program where a reference is valid. Most lifetimes are
+inferred by the compiler, so you write references like `&str` and `&Lesson` without naming
+the lifetime explicitly.
+
+<RunnableSnippet title="A simple borrow">{`fn print_title(title: &str) {
+    println!("lesson: {title}");
+}
+
+fn main() {
+    let title = String::from("Lifetimes");
+    print_title(&title);
+
+    println!("still owned by main: {title}");
+}`}</RunnableSnippet>
+
+The reference passed to `print_title` is valid only while `title` is alive. The function
+borrows the text and gives the borrow back when it returns.
+
+<Callout type="tip" title="Lifetimes prevent dangling references">
+  Rust does not let a reference outlive the value it points at. That is the core idea
+  behind lifetime checks.
+</Callout>
+
+## The compiler often shortens borrows
+
+A borrow lasts until its final use, not necessarily until the end of the surrounding block.
+This makes ordinary read-then-mutate patterns ergonomic.
+
+<RunnableSnippet title="Borrow ends after last use">{`fn main() {
+    let mut title = String::from("lifetime");
+
+    let first_view = &title;
+    println!("before: {first_view}");
+
+    title.push_str(" annotations");
+    println!("after: {title}");
+}`}</RunnableSnippet>
+
+The immutable borrow through `first_view` ends after its `println!`. After that, the code
+can mutably borrow `title` to append text.
+
+## Return references only to existing data
+
+A function may return a reference when that reference points into data owned by the caller.
+It cannot return a reference to a local value created inside the function.
+
+<RunnableSnippet title="Return a borrowed part">{`fn first_word(text: &str) -> &str {
+    match text.split_whitespace().next() {
+        Some(word) => word,
+        None => "",
+    }
+}
+
+fn main() {
+    let title = String::from("lifetimes keep borrows honest");
+    let first = first_word(&title);
+
+    println!("first word: {first}");
+}`}</RunnableSnippet>
+
+The returned `&str` points into `title`, which is owned by `main`. It stays valid as long
+as `title` stays valid.
+
+```rust
+fn broken() -> &str {
+    let text = String::from("temporary");
+    &text
+}
+```
+
+That broken function cannot compile because `text` is dropped when the function returns.
+The caller would receive a reference to data that no longer exists.
+
+## Lifetime annotations connect inputs and outputs
+
+When a function has multiple input references and returns a reference, Rust may need help
+knowing which input the output is tied to. A named lifetime annotation describes that
+relationship.
+
+<RunnableSnippet title="Choose the longer text">{`fn longer<'a>(left: &'a str, right: &'a str) -> &'a str {
+    if left.len() >= right.len() {
+        left
+    } else {
+        right
+    }
+}
+
+fn main() {
+    let short = String::from("Vec");
+    let long = String::from("HashMap");
+
+    let answer = longer(&short, &long);
+    println!("longer topic: {answer}");
+}`}</RunnableSnippet>
+
+The signature says both inputs and the returned reference must be valid for the same
+chosen lifetime `'a`. In practice, the returned reference is valid only for the overlap of
+the two input borrows.
+
+<Callout type="note" title="Annotations describe, not extend">
+  Writing `'a` does not make any value live longer. It names the relationship the compiler
+  must verify.
+</Callout>
+
+## Use owned returns when data is created inside
+
+If a function builds new data, return an owned value such as `String` instead of a
+reference.
+
+<RunnableSnippet title="Return owned data">{`fn make_label(topic: &str, minutes: u32) -> String {
+    format!("{topic}: {minutes} minutes")
+}
+
+fn main() {
+    let label = make_label("lifetimes", 22);
+    println!("{label}");
+}`}</RunnableSnippet>
+
+The `String` is moved to the caller. No borrowed reference needs to point back into the
+function's local variables.
+
+## Structs can hold references
+
+A struct that stores a reference needs a lifetime parameter. The parameter says the struct
+cannot outlive the borrowed data.
+
+<RunnableSnippet title="Struct with a reference">{`struct LessonView<'a> {
+    title: &'a str,
+    minutes: u32,
+}
+
+fn main() {
+    let title = String::from("Borrowed fields");
+    let view = LessonView {
+        title: &title,
+        minutes: 12,
+    };
+
+    println!("{} takes {} minutes", view.title, view.minutes);
+}`}</RunnableSnippet>
+
+`LessonView<'a>` does not own its title. It is a view into a title owned somewhere else.
+
+## Methods can use lifetime parameters
+
+When a struct contains references, its `impl` block repeats the lifetime parameter.
+
+<RunnableSnippet title="Impl with a lifetime">{`struct LessonView<'a> {
+    title: &'a str,
+    minutes: u32,
+}
+
+impl<'a> LessonView<'a> {
+    fn summary(&self) -> String {
+        format!("{} ({} minutes)", self.title, self.minutes)
+    }
+}
+
+fn main() {
+    let title = String::from("Lifetime parameters");
+    let view = LessonView {
+        title: &title,
+        minutes: 14,
+    };
+
+    println!("{}", view.summary());
+}`}</RunnableSnippet>
+
+The lifetime belongs to the borrowed field. The method's `&self` borrow is usually inferred
+and does not need to be named.
+
+## Common borrow-checker scenarios
+
+Many lifetime errors are really scope or ownership design questions.
+
+### Scenario: a reference lives too long
+
+Keep references in the smallest useful scope. This lets later code borrow or mutate the
+same value differently.
+
+<RunnableSnippet title="Use a smaller scope">{`fn main() {
+    let mut notes = String::from("read");
+
+    {
+        let view = &notes;
+        println!("view: {view}");
+    }
+
+    notes.push_str(" then edit");
+    println!("{notes}");
+}`}</RunnableSnippet>
+
+The inner block makes the read-only borrow end before the mutation.
+
+### Scenario: returning either of two borrows
+
+Use a named lifetime when the result may come from more than one borrowed input.
+
+<RunnableSnippet title="Return one of two inputs">{`fn preferred<'a>(primary: &'a str, fallback: &'a str) -> &'a str {
+    if primary.is_empty() {
+        fallback
+    } else {
+        primary
+    }
+}
+
+fn main() {
+    let custom = String::new();
+    let default = String::from("ownership");
+
+    println!("topic: {}", preferred(&custom, &default));
+}`}</RunnableSnippet>
+
+The returned reference is valid only while both possible source borrows are valid.
+
+### Scenario: storing borrowed text
+
+If the stored value must outlive the source text, store an owned `String`. If it is just a
+temporary view, storing `&str` with a lifetime is fine.
+
+<RunnableSnippet title="Choose owned storage">{`struct Lesson {
+    title: String,
+}
+
+fn make_lesson(title: &str) -> Lesson {
+    Lesson {
+        title: title.to_string(),
+    }
+}
+
+fn main() {
+    let lesson = make_lesson("own stored text");
+    println!("{}", lesson.title);
+}`}</RunnableSnippet>
+
+Owning the text makes the struct independent of the caller's original string slice.
+
+## Try it prompts
+
+Use these edits to practice lifetimes:
+
+- Move the `title.push_str` call before the final use of `first_view` and read the borrow
+  error.
+- Change `longer` to return `left` every time, then remove the second input lifetime from
+  the return relationship.
+- Rewrite `LessonView` to own `String` instead of borrowing `&str`.
+- Add a method to `LessonView` that returns `&str` for the title.
+- Create a small inner block and watch how it shortens a borrow.
