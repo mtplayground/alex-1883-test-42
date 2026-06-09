@@ -1,0 +1,61 @@
+export const metadata = {
+  label: "Ownership",
+  title: "Ownership keeps values predictable",
+  description: "Learn how Rust tracks the lifetime of values without a garbage collector."
+};
+
+## One owner at a time
+
+Rust values have an owner. When the owner goes out of scope, Rust drops the value. This
+rule gives Rust a clear moment to free memory and close resources.
+
+```rust
+fn main() {
+    let message = String::from("hello");
+    println!("{message}");
+}
+```
+
+<Callout type="note" title="Scope matters">
+  A value is valid from the line where it is created until the end of the block that owns
+  it.
+</Callout>
+
+## Moving values
+
+Assignment can move ownership. After a move, the old binding can no longer use the value.
+
+```rust
+fn main() {
+    let first = String::from("rust");
+    let second = first;
+
+    println!("{second}");
+}
+```
+
+### Why moves help
+
+Moves prevent two bindings from both believing they should clean up the same value. The
+compiler rejects stale uses before the program runs.
+
+## Borrowing values
+
+References let code inspect or change a value without taking ownership. An immutable
+borrow uses `&T`, while a mutable borrow uses `&mut T`.
+
+```rust
+fn count_letters(word: &str) -> usize {
+    word.len()
+}
+
+fn main() {
+    let language = String::from("rust");
+    println!("{}", count_letters(&language));
+}
+```
+
+<Callout type="tip" title="Start with borrowing">
+  When a function only needs to read a value, pass a reference instead of moving the value
+  into the function.
+</Callout>
