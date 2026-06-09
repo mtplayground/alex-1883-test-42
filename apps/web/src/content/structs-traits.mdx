@@ -1,0 +1,259 @@
+export const metadata = {
+  label: "Structs & traits",
+  title: "Structs and traits model behavior",
+  description:
+    "Group related data with structs, attach behavior with methods, and share capabilities through traits."
+};
+
+## Structs bundle named fields
+
+A struct gives related values names. This is clearer than passing separate values once the
+data has a shared meaning.
+
+<RunnableSnippet title="Define a struct">{`struct Lesson {
+    title: String,
+    minutes: u32,
+    complete: bool,
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Structs and traits"),
+        minutes: 24,
+        complete: false,
+    };
+
+    println!("{} takes {} minutes", lesson.title, lesson.minutes);
+    println!("complete? {}", lesson.complete);
+}`}</RunnableSnippet>
+
+Field names become part of the type's documentation. A reader can see what each value
+means without remembering tuple positions.
+
+<Callout type="tip" title="Use structs for domain data">
+  When a value represents a real concept in your program, a struct often communicates that
+  concept better than a tuple.
+</Callout>
+
+## Methods live in `impl` blocks
+
+An `impl` block attaches functions to a type. Methods receive `self` in some form:
+`&self` to read, `&mut self` to change, or `self` to consume.
+
+<RunnableSnippet title="Struct methods">{`struct Lesson {
+    title: String,
+    minutes: u32,
+}
+
+impl Lesson {
+    fn new(title: &str, minutes: u32) -> Self {
+        Self {
+            title: String::from(title),
+            minutes,
+        }
+    }
+
+    fn summary(&self) -> String {
+        format!("{} takes {} minutes", self.title, self.minutes)
+    }
+
+    fn extend(&mut self, extra_minutes: u32) {
+        self.minutes += extra_minutes;
+    }
+}
+
+fn main() {
+    let mut lesson = Lesson::new("Struct methods", 18);
+    lesson.extend(6);
+
+    println!("{}", lesson.summary());
+}`}</RunnableSnippet>
+
+`Lesson::new` is an associated function because it does not take `self`. `summary` borrows
+the lesson, while `extend` mutably borrows it.
+
+### Consuming methods take ownership
+
+A method can take `self` when it should use up the value and return something else.
+
+<RunnableSnippet title="Consume self">{`struct DraftLesson {
+    title: String,
+    minutes: u32,
+}
+
+struct PublishedLesson {
+    title: String,
+    minutes: u32,
+}
+
+impl DraftLesson {
+    fn publish(self) -> PublishedLesson {
+        PublishedLesson {
+            title: self.title,
+            minutes: self.minutes,
+        }
+    }
+}
+
+fn main() {
+    let draft = DraftLesson {
+        title: String::from("Trait bounds"),
+        minutes: 16,
+    };
+    let published = draft.publish();
+
+    println!("published: {} ({})", published.title, published.minutes);
+}`}</RunnableSnippet>
+
+After `publish`, the draft has been moved. That makes it impossible to accidentally keep
+editing a lesson after publishing it.
+
+## Traits define shared behavior
+
+A trait names behavior that multiple types can implement. It is similar to a promise:
+anything implementing the trait provides the required methods.
+
+<RunnableSnippet title="Define and implement a trait">{`trait Describe {
+    fn describe(&self) -> String;
+}
+
+struct Lesson {
+    title: String,
+    minutes: u32,
+}
+
+impl Describe for Lesson {
+    fn describe(&self) -> String {
+        format!("lesson: {} ({} minutes)", self.title, self.minutes)
+    }
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Traits"),
+        minutes: 20,
+    };
+
+    println!("{}", lesson.describe());
+}`}</RunnableSnippet>
+
+The trait describes what behavior exists. The `impl Describe for Lesson` block explains
+how `Lesson` provides that behavior.
+
+## More than one type can implement a trait
+
+Traits become useful when different types can be used through the same behavior.
+
+<RunnableSnippet title="Shared behavior">{`trait Describe {
+    fn describe(&self) -> String;
+}
+
+struct Lesson {
+    title: String,
+    minutes: u32,
+}
+
+struct Checkpoint {
+    name: String,
+    done: bool,
+}
+
+impl Describe for Lesson {
+    fn describe(&self) -> String {
+        format!("lesson: {} ({} minutes)", self.title, self.minutes)
+    }
+}
+
+impl Describe for Checkpoint {
+    fn describe(&self) -> String {
+        format!("checkpoint: {} done={}", self.name, self.done)
+    }
+}
+
+fn print_description<T: Describe>(item: &T) {
+    println!("{}", item.describe());
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Structs"),
+        minutes: 22,
+    };
+    let checkpoint = Checkpoint {
+        name: String::from("write an impl block"),
+        done: true,
+    };
+
+    print_description(&lesson);
+    print_description(&checkpoint);
+}`}</RunnableSnippet>
+
+`print_description` does not need to know the concrete type. It only needs a value whose
+type implements `Describe`.
+
+## Trait bounds constrain generic code
+
+Generic functions use trait bounds to say which capabilities a type must have. The bound
+`T: Describe` means `T` can be any type that implements `Describe`.
+
+<RunnableSnippet title="Trait bounds with where">{`trait Describe {
+    fn describe(&self) -> String;
+}
+
+struct Lesson {
+    title: String,
+}
+
+struct Note {
+    text: String,
+}
+
+impl Describe for Lesson {
+    fn describe(&self) -> String {
+        format!("lesson: {}", self.title)
+    }
+}
+
+impl Describe for Note {
+    fn describe(&self) -> String {
+        format!("note: {}", self.text)
+    }
+}
+
+fn print_pair<A, B>(first: &A, second: &B)
+where
+    A: Describe,
+    B: Describe,
+{
+    println!("{}", first.describe());
+    println!("{}", second.describe());
+}
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Trait bounds"),
+    };
+    let note = Note {
+        text: String::from("bounds keep generic code honest"),
+    };
+
+    print_pair(&lesson, &note);
+}`}</RunnableSnippet>
+
+Use the inline form, `fn show<T: Describe>(...)`, for short bounds. Use a `where` clause
+when multiple bounds would make the function signature hard to scan.
+
+<Callout type="note" title="Traits are compile-time contracts">
+  A trait bound is checked before the program runs. If a type does not implement the
+  required trait, the compiler points at the missing behavior.
+</Callout>
+
+## Try it prompts
+
+Use these edits to practice structs and traits:
+
+- Add a `difficulty` field to `Lesson`, then update `summary`.
+- Change `extend` to return the new minute total.
+- Add a second trait method named `label`.
+- Implement `Describe` for a new `Quiz` struct.
+- Rewrite `print_description` to take `item: &impl Describe` instead of a generic `T`.
