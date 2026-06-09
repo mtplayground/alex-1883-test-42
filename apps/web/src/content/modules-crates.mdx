@@ -1,0 +1,255 @@
+export const metadata = {
+  label: "Modules & crates",
+  title: "Modules and crates organize Rust projects",
+  description:
+    "Learn how files, modules, visibility, paths, use statements, crates, and Cargo fit together in Rust projects."
+};
+
+## Projects are built from crates and modules
+
+Rust organizes code at two levels. A crate is the compilation unit Cargo builds.
+Inside a crate, modules group related items such as functions, structs, enums, and
+traits.
+
+<Callout type="tip" title="Think from big to small">
+  Cargo manages packages and crates. Rust modules organize code inside those crates.
+</Callout>
+
+## Crates are what Rust compiles
+
+A crate can be a binary, a library, or both. A binary crate has an executable entry point
+in `main.rs`. A library crate exposes reusable code from `lib.rs`.
+
+```text
+lesson-tools/
+├── Cargo.toml
+└── src/
+    ├── main.rs
+    └── lib.rs
+```
+
+`Cargo.toml` names the package and dependencies. `src/main.rs` builds a binary. `src/lib.rs`
+builds a library crate other Rust code can use.
+
+<RunnableSnippet title="A small binary crate">{`fn main() {
+    println!("this code would live in src/main.rs");
+}`}</RunnableSnippet>
+
+The Playground runs one file as a binary crate, which is why every runnable example in
+this manual includes a `main` function.
+
+## Modules group related code
+
+Use `mod` to define a module. A module can live inline in the same file or in another
+file. Inline modules are useful for learning the rules before splitting code into files.
+
+<RunnableSnippet title="Inline module">{`mod lessons {
+    pub fn count() -> usize {
+        3
+    }
+
+    fn internal_note() -> &'static str {
+        "private helper"
+    }
+}
+
+fn main() {
+    println!("lesson count: {}", lessons::count());
+}`}</RunnableSnippet>
+
+`lessons::count` is reachable from `main` because it is marked `pub`. The helper
+`internal_note` stays private to the `lessons` module.
+
+## Visibility starts private
+
+Items inside a module are private by default. Add `pub` only to the API that other code
+should use.
+
+<RunnableSnippet title="Public API, private helper">{`mod formatter {
+    pub fn lesson_label(title: &str, minutes: u32) -> String {
+        format!("{} ({})", title_case(title), minutes)
+    }
+
+    fn title_case(title: &str) -> String {
+        let mut chars = title.chars();
+        match chars.next() {
+            Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+            None => String::new(),
+        }
+    }
+}
+
+fn main() {
+    let label = formatter::lesson_label("modules", 18);
+    println!("{label}");
+}`}</RunnableSnippet>
+
+The caller uses `lesson_label`. The module keeps `title_case` as an implementation detail
+that can change later.
+
+<Callout type="note" title="Public is a design choice">
+  `pub` is not just a compiler switch. It is a promise that other code may depend on that
+  item.
+</Callout>
+
+## Paths name items
+
+A path tells Rust where to find an item. Use `crate::` to start from the current crate
+root. Use `self::` for the current module and `super::` for the parent module.
+
+<RunnableSnippet title="Use crate and super paths">{`mod course {
+    pub const TITLE: &str = "Rust Learning Manual";
+
+    pub mod section {
+        pub fn heading() -> String {
+            format!("{}: modules", super::TITLE)
+        }
+
+        pub fn root_heading() -> String {
+            format!("{}: crates", crate::course::TITLE)
+        }
+    }
+}
+
+fn main() {
+    println!("{}", course::section::heading());
+    println!("{}", course::section::root_heading());
+}`}</RunnableSnippet>
+
+`super::TITLE` climbs from `course::section` to `course`. `crate::course::TITLE` starts at
+the crate root and walks down.
+
+## Bring names into scope with `use`
+
+Long paths are clear but noisy when repeated. A `use` statement brings a path into the
+current scope.
+
+<RunnableSnippet title="Use imports">{`mod manual {
+    pub mod lessons {
+        pub struct Lesson {
+            pub title: String,
+            pub minutes: u32,
+        }
+    }
+}
+
+use manual::lessons::Lesson;
+
+fn main() {
+    let lesson = Lesson {
+        title: String::from("Paths and use"),
+        minutes: 16,
+    };
+
+    println!("{} takes {} minutes", lesson.title, lesson.minutes);
+}`}</RunnableSnippet>
+
+Prefer importing types, traits, and modules near the top of the file. For functions, using
+the module path can make the call site easier to read.
+
+### Rename imports when names collide
+
+`as` gives an imported item a local name.
+
+<RunnableSnippet title="Rename with as">{`mod draft {
+    pub struct Lesson {
+        pub title: String,
+    }
+}
+
+mod published {
+    pub struct Lesson {
+        pub title: String,
+    }
+}
+
+use draft::Lesson as DraftLesson;
+use published::Lesson as PublishedLesson;
+
+fn main() {
+    let draft = DraftLesson {
+        title: String::from("Modules"),
+    };
+    let published = PublishedLesson {
+        title: String::from("Crates"),
+    };
+
+    println!("draft: {}", draft.title);
+    println!("published: {}", published.title);
+}`}</RunnableSnippet>
+
+Renaming keeps the source of each type visible without forcing every use site to repeat
+the full module path.
+
+## Split modules across files
+
+As a module grows, move it into its own file. Rust uses the module declaration to connect
+the file tree to the module tree.
+
+```text
+src/
+├── main.rs
+├── lessons.rs
+└── formatters/
+    └── mod.rs
+```
+
+```rust
+// src/main.rs
+mod lessons;
+mod formatters;
+
+fn main() {
+    println!("{}", lessons::count());
+}
+```
+
+The `mod lessons;` line tells Rust to load `src/lessons.rs`. The `mod formatters;` line
+loads `src/formatters.rs` or `src/formatters/mod.rs`.
+
+<Callout type="warning" title="Declare once">
+  `mod lessons;` declares a module. `use lessons::count;` imports a name from that module.
+  They solve different problems.
+</Callout>
+
+## Cargo builds and checks crates
+
+Cargo is Rust's package manager and build tool. It creates projects, builds crates, runs
+tests, and downloads dependencies declared in `Cargo.toml`.
+
+```bash
+cargo new lesson-tools
+cd lesson-tools
+cargo check
+cargo run
+cargo test
+```
+
+Use `cargo check` for fast feedback while editing. Use `cargo run` to build and execute a
+binary. Use `cargo test` to run unit and integration tests.
+
+## Dependencies belong in `Cargo.toml`
+
+External crates are declared in `Cargo.toml`, then imported from Rust code with `use`.
+
+```toml
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+```
+
+```rust
+use serde::Serialize;
+```
+
+The dependency entry tells Cargo what to download. The `use` statement only brings a name
+from that crate into scope.
+
+## Try it prompts
+
+Use these edits to practice modules and crates:
+
+- Remove `pub` from a runnable example and read the compiler's visibility error.
+- Change a `crate::` path to a relative path using `super::`.
+- Add a second public function to a module and call it from `main`.
+- Rename an imported type with `as` to make a conflict explicit.
+- Sketch a `src/` file tree for a project with a binary, a library, and two modules.

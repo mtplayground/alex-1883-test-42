@@ -10,6 +10,10 @@ import GettingStartedContent, {
   metadata as gettingStartedMetadata
 } from "./getting-started.mdx";
 import gettingStartedSource from "./getting-started.mdx?manual-raw";
+import ModulesCratesContent, {
+  metadata as modulesCratesMetadata
+} from "./modules-crates.mdx";
+import modulesCratesSource from "./modules-crates.mdx?manual-raw";
 import OwnershipContent, { metadata as ownershipMetadata } from "./ownership.mdx";
 import ownershipSource from "./ownership.mdx?manual-raw";
 import StructsTraitsContent, {
@@ -84,6 +88,14 @@ const collectionsIteratorsSection = createSection({
   source: collectionsIteratorsSource
 });
 
+const modulesCratesSection = createSection({
+  Component: ModulesCratesContent,
+  id: "modules-crates",
+  metadata: modulesCratesMetadata,
+  path: "/modules-crates",
+  source: modulesCratesSource
+});
+
 const errorsSection = createSection({
   Component: ErrorsContent,
   id: "errors",
@@ -98,6 +110,7 @@ export const manualSections = [
   typesSection,
   structsTraitsSection,
   collectionsIteratorsSection,
+  modulesCratesSection,
   errorsSection
 ] satisfies ManualSection[];
 export const defaultManualSection = gettingStartedSection;
