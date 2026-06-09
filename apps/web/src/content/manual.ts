@@ -1,5 +1,9 @@
 import type { ComponentType } from "react";
 
+import CollectionsIteratorsContent, {
+  metadata as collectionsIteratorsMetadata
+} from "./collections-iterators.mdx";
+import collectionsIteratorsSource from "./collections-iterators.mdx?manual-raw";
 import ErrorsContent, { metadata as errorsMetadata } from "./errors.mdx";
 import errorsSource from "./errors.mdx?manual-raw";
 import GettingStartedContent, {
@@ -72,6 +76,14 @@ const structsTraitsSection = createSection({
   source: structsTraitsSource
 });
 
+const collectionsIteratorsSection = createSection({
+  Component: CollectionsIteratorsContent,
+  id: "collections-iterators",
+  metadata: collectionsIteratorsMetadata,
+  path: "/collections-iterators",
+  source: collectionsIteratorsSource
+});
+
 const errorsSection = createSection({
   Component: ErrorsContent,
   id: "errors",
@@ -85,6 +97,7 @@ export const manualSections = [
   ownershipSection,
   typesSection,
   structsTraitsSection,
+  collectionsIteratorsSection,
   errorsSection
 ] satisfies ManualSection[];
 export const defaultManualSection = gettingStartedSection;
