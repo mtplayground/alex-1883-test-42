@@ -1,0 +1,26 @@
+export const metadata = {
+  label: "Getting started",
+  title: "Start with a small Rust program",
+  description:
+    "Begin with the shape of an executable Rust file and a few terms that appear throughout the manual."
+};
+
+## Start from `main`
+
+Every executable Rust program starts in a `main` function. The function body is wrapped in
+braces, and each statement inside the body runs from top to bottom.
+
+## Example source
+
+```rust
+fn main() {
+    let topic = "ownership";
+    println!("Next lesson: {topic}");
+}
+```
+
+## Reading the snippet
+
+- `let` binds a local value.
+- `topic` is the local name.
+- `println!` writes formatted text to standard output.

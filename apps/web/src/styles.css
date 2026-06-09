@@ -12,3 +12,37 @@
 body {
   margin: 0;
 }
+
+@layer components {
+  .manual-content {
+    @apply max-w-none text-base leading-8 text-ink-700;
+  }
+
+  .manual-content h2 {
+    @apply mt-10 border-t border-stone-200 pt-8 text-2xl font-semibold leading-9 text-ink-950;
+  }
+
+  .manual-content p {
+    @apply mt-4;
+  }
+
+  .manual-content ul {
+    @apply mt-4 list-disc space-y-2 pl-6;
+  }
+
+  .manual-content li {
+    @apply pl-1;
+  }
+
+  .manual-content pre {
+    @apply mt-6 overflow-x-auto rounded-lg border border-stone-200 bg-ink-950 p-5 text-sm leading-7 text-stone-100;
+  }
+
+  .manual-content code {
+    @apply font-mono;
+  }
+
+  .manual-content :not(pre) > code {
+    @apply rounded bg-stone-200 px-1.5 py-0.5 text-sm text-ink-950;
+  }
+}
