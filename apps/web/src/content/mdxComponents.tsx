@@ -1,27 +1,9 @@
-import {
-  Children,
-  isValidElement,
-  type ComponentPropsWithoutRef,
-  type ReactNode
-} from "react";
+import { Children, type ComponentPropsWithoutRef } from "react";
 
+import { Callout } from "../components/content/Callout";
+import { CodeBlock } from "../components/content/CodeBlock";
 import { slugifyHeading } from "../lib/headings";
-
-function textFromNode(node: ReactNode): string {
-  if (typeof node === "string" || typeof node === "number") {
-    return String(node);
-  }
-
-  if (Array.isArray(node)) {
-    return node.map(textFromNode).join("");
-  }
-
-  if (isValidElement<{ children?: ReactNode }>(node)) {
-    return textFromNode(node.props.children);
-  }
-
-  return "";
-}
+import { textFromNode } from "../lib/reactText";
 
 function createHeading(level: 2 | 3) {
   const Heading = ({
@@ -43,6 +25,8 @@ function createHeading(level: 2 | 3) {
 }
 
 export const mdxComponents = {
+  Callout,
   h2: createHeading(2),
-  h3: createHeading(3)
+  h3: createHeading(3),
+  pre: CodeBlock
 };
