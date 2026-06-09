@@ -12,10 +12,24 @@
     "dev:api": "npm run dev --workspace @alex-1883-test-42/api",
     "dev:web": "npm run dev --workspace @alex-1883-test-42/web",
     "build": "npm run build --workspaces",
+    "format": "prettier . --write --ignore-unknown",
+    "format:check": "prettier . --check --ignore-unknown",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "npm run preview --workspace @alex-1883-test-42/web",
-    "start:api": "npm run start --workspace @alex-1883-test-42/api"
+    "start:api": "npm run start --workspace @alex-1883-test-42/api",
+    "typecheck": "tsc -b --pretty false"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.19.1"
   }
 }
