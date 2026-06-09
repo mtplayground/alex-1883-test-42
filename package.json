@@ -1,0 +1,18 @@
+{
+  "name": "alex-1883-test-42",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @alex-1883-test-42/web",
+    "build": "npm run build --workspace @alex-1883-test-42/web",
+    "preview": "npm run preview --workspace @alex-1883-test-42/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
