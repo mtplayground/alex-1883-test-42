@@ -6,12 +6,12 @@ import {
   createRustPlaygroundClient,
   RustPlaygroundError,
   type RustPlaygroundChannel,
-  type RustPlaygroundClient,
   type RustPlaygroundCrateType,
   type RustPlaygroundEdition,
   type RustPlaygroundMode,
   type RustPlaygroundRunRequest,
-  type RustPlaygroundRunResult
+  type RustPlaygroundRunResult,
+  type RustPlaygroundRunner
 } from "../services/rustPlaygroundClient.js";
 
 const CHANNELS = ["stable", "beta", "nightly"] as const;
@@ -20,7 +20,7 @@ const EDITIONS = ["2015", "2018", "2021", "2024"] as const;
 const MODES = ["debug", "release"] as const;
 
 interface RunRouterOptions {
-  client?: RustPlaygroundClient;
+  client?: RustPlaygroundRunner;
   config?: AppConfig;
 }
 
