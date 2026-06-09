@@ -8,6 +8,10 @@ import GettingStartedContent, {
 import gettingStartedSource from "./getting-started.mdx?manual-raw";
 import OwnershipContent, { metadata as ownershipMetadata } from "./ownership.mdx";
 import ownershipSource from "./ownership.mdx?manual-raw";
+import StructsTraitsContent, {
+  metadata as structsTraitsMetadata
+} from "./structs-traits.mdx";
+import structsTraitsSource from "./structs-traits.mdx?manual-raw";
 import TypesContent, { metadata as typesMetadata } from "./types.mdx";
 import typesSource from "./types.mdx?manual-raw";
 import { extractHeadings, type ContentHeading } from "../lib/headings";
@@ -60,6 +64,14 @@ const typesSection = createSection({
   source: typesSource
 });
 
+const structsTraitsSection = createSection({
+  Component: StructsTraitsContent,
+  id: "structs-traits",
+  metadata: structsTraitsMetadata,
+  path: "/structs-traits",
+  source: structsTraitsSource
+});
+
 const errorsSection = createSection({
   Component: ErrorsContent,
   id: "errors",
@@ -72,6 +84,7 @@ export const manualSections = [
   gettingStartedSection,
   ownershipSection,
   typesSection,
+  structsTraitsSection,
   errorsSection
 ] satisfies ManualSection[];
 export const defaultManualSection = gettingStartedSection;
