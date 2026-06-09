@@ -7,13 +7,16 @@ app plus a Node.js/Express proxy that submits code to the public Rust Playground
 ## What It Does
 
 - Presents developer-focused Rust manual sections for getting started,
-  ownership, types, and errors.
+  ownership, lifetimes, types, structs and traits, collections and iterators,
+  modules and crates, testing, and errors.
 - Renders MDX content with reusable callouts, copyable code blocks, and runnable
   snippets.
 - Lets readers edit Rust examples in a CodeMirror editor, run them, and view
   stdout, stderr, compiler output, loading states, and actionable error hints.
 - Supports light and dark themes, responsive section navigation, and an
   in-page table of contents generated from content headings.
+- Uses authored "try it" prompts throughout the manual to encourage readers to
+  modify examples and observe compiler feedback.
 
 ## Architecture
 
