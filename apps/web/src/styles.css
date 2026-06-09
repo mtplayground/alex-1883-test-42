@@ -15,15 +15,15 @@ body {
 
 @layer components {
   .manual-content {
-    @apply max-w-none text-base leading-8 text-ink-700;
+    @apply max-w-none text-base leading-8 text-ink-700 dark:text-stone-300;
   }
 
   .manual-content h2 {
-    @apply mt-10 scroll-mt-8 border-t border-stone-200 pt-8 text-2xl font-semibold leading-9 text-ink-950;
+    @apply mt-10 scroll-mt-8 border-t border-stone-200 pt-8 text-2xl font-semibold leading-9 text-ink-950 dark:border-stone-800 dark:text-stone-50;
   }
 
   .manual-content h3 {
-    @apply mt-8 scroll-mt-8 text-xl font-semibold leading-8 text-ink-950;
+    @apply mt-8 scroll-mt-8 text-xl font-semibold leading-8 text-ink-950 dark:text-stone-50;
   }
 
   .manual-content p {
@@ -39,7 +39,7 @@ body {
   }
 
   .manual-content pre {
-    @apply mt-6 overflow-x-auto rounded-lg border border-stone-200 bg-ink-950 p-5 text-sm leading-7 text-stone-100;
+    @apply mt-6 overflow-x-auto rounded-lg border border-stone-200 bg-ink-950 p-5 text-sm leading-7 text-stone-100 dark:border-stone-700 dark:bg-black;
   }
 
   .manual-content code {
@@ -47,10 +47,10 @@ body {
   }
 
   .manual-content :not(pre) > code {
-    @apply rounded bg-stone-200 px-1.5 py-0.5 text-sm text-ink-950;
+    @apply rounded bg-stone-200 px-1.5 py-0.5 text-sm text-ink-950 dark:bg-stone-800 dark:text-stone-100;
   }
 
   .manual-content a {
-    @apply font-medium text-rust-600 underline decoration-rust-600/30 underline-offset-4;
+    @apply font-medium text-rust-600 underline decoration-rust-600/30 underline-offset-4 dark:text-rust-500;
   }
 }
