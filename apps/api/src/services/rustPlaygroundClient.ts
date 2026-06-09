@@ -22,6 +22,10 @@ export interface RustPlaygroundRunResult {
   success: boolean;
 }
 
+export interface RustPlaygroundRunner {
+  run(request: RustPlaygroundRunRequest): Promise<RustPlaygroundRunResult>;
+}
+
 interface RustPlaygroundExecutePayload {
   backtrace: boolean;
   channel: RustPlaygroundChannel;
@@ -113,7 +117,7 @@ function parsePlaygroundResponse(value: unknown): RustPlaygroundRunResult {
   };
 }
 
-export class RustPlaygroundClient {
+export class RustPlaygroundClient implements RustPlaygroundRunner {
   private readonly executeUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
