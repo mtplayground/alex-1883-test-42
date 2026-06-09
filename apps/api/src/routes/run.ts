@@ -184,20 +184,51 @@ function normalizeRunResult(result: RustPlaygroundRunResult) {
   };
 }
 
-function playgroundErrorStatus(error: RustPlaygroundError): number {
-  if (error.code === "timeout") {
-    return 504;
-  }
-
-  return 502;
+interface UpstreamErrorResponse {
+  code: string;
+  message: string;
+  status: number;
+  upstreamStatus?: number;
 }
 
-function playgroundErrorMessage(error: RustPlaygroundError): string {
-  if (error.code === "timeout") {
-    return "Rust Playground request timed out.";
-  }
+function serializeUpstreamError(error: RustPlaygroundError) {
+  return {
+    name: error.name,
+    code: error.code,
+    message: error.message,
+    stack: error.stack,
+    status: error.status
+  };
+}
 
-  return "Rust Playground request failed.";
+function playgroundErrorResponse(error: RustPlaygroundError): UpstreamErrorResponse {
+  switch (error.code) {
+    case "timeout":
+      return {
+        code: "upstream_timeout",
+        message: "Rust Playground did not respond before the timeout.",
+        status: 504
+      };
+    case "invalid_response":
+      return {
+        code: "upstream_invalid_response",
+        message: "Rust Playground returned a response the API could not read.",
+        status: 502
+      };
+    case "upstream_http_error":
+      return {
+        code: "upstream_http_error",
+        message: "Rust Playground rejected the run request.",
+        status: 502,
+        ...(error.status !== undefined ? { upstreamStatus: error.status } : {})
+      };
+    case "network_error":
+      return {
+        code: "upstream_unavailable",
+        message: "Rust Playground could not be reached.",
+        status: 502
+      };
+  }
 }
 
 export function createRunRouter(options: RunRouterOptions = {}) {
@@ -223,10 +254,16 @@ export function createRunRouter(options: RunRouterOptions = {}) {
       res.status(200).json(normalizeRunResult(result));
     } catch (error) {
       if (error instanceof RustPlaygroundError) {
-        res.status(playgroundErrorStatus(error)).json({
+        console.error("Rust Playground upstream error", serializeUpstreamError(error));
+
+        const upstreamError = playgroundErrorResponse(error);
+        res.status(upstreamError.status).json({
           error: {
-            code: error.code,
-            message: playgroundErrorMessage(error)
+            code: upstreamError.code,
+            message: upstreamError.message,
+            ...(upstreamError.upstreamStatus !== undefined
+              ? { upstreamStatus: upstreamError.upstreamStatus }
+              : {})
           }
         });
         return;
