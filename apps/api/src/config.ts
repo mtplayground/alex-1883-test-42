@@ -5,6 +5,10 @@ export interface RateLimitConfig {
   windowMs: number;
 }
 
+export interface RunConfig {
+  maxCodeBytes: number;
+}
+
 export interface UpstreamConfig {
   rustPlaygroundUrl: string;
   rustPlaygroundTimeoutMs: number;
@@ -15,6 +19,7 @@ export interface AppConfig {
   host: string;
   port: number;
   rateLimit: RateLimitConfig;
+  run: RunConfig;
   upstream: UpstreamConfig;
 }
 
@@ -22,6 +27,7 @@ const DEFAULT_HOST = "0.0.0.0";
 const DEFAULT_PORT = 8080;
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 60;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_RUN_CODE_MAX_BYTES = 100_000;
 const DEFAULT_RUST_PLAYGROUND_TIMEOUT_MS = 10_000;
 const DEFAULT_RUST_PLAYGROUND_URL = "https://play.rust-lang.org";
 
@@ -96,6 +102,14 @@ export function getAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         "RATE_LIMIT_WINDOW_MS",
         optionalEnv(env.RATE_LIMIT_WINDOW_MS),
         DEFAULT_RATE_LIMIT_WINDOW_MS,
+        { min: 1 }
+      )
+    },
+    run: {
+      maxCodeBytes: parseInteger(
+        "RUN_CODE_MAX_BYTES",
+        optionalEnv(env.RUN_CODE_MAX_BYTES),
+        DEFAULT_RUN_CODE_MAX_BYTES,
         { min: 1 }
       )
     },
