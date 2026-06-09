@@ -1,9 +1,9 @@
 import { createServer } from "node:http";
 
 import { createApp } from "./app.js";
-import { getServerConfig } from "./config.js";
+import { getAppConfig } from "./config.js";
 
-const config = getServerConfig();
+const config = getAppConfig();
 const app = createApp();
 const server = createServer(app);
 
