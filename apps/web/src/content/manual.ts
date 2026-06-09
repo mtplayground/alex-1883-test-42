@@ -10,6 +10,10 @@ import GettingStartedContent, {
   metadata as gettingStartedMetadata
 } from "./getting-started.mdx";
 import gettingStartedSource from "./getting-started.mdx?manual-raw";
+import LifetimesContent, {
+  metadata as lifetimesMetadata
+} from "./lifetimes.mdx";
+import lifetimesSource from "./lifetimes.mdx?manual-raw";
 import ModulesCratesContent, {
   metadata as modulesCratesMetadata
 } from "./modules-crates.mdx";
@@ -64,6 +68,14 @@ const ownershipSection = createSection({
   source: ownershipSource
 });
 
+const lifetimesSection = createSection({
+  Component: LifetimesContent,
+  id: "lifetimes",
+  metadata: lifetimesMetadata,
+  path: "/lifetimes",
+  source: lifetimesSource
+});
+
 const typesSection = createSection({
   Component: TypesContent,
   id: "types",
@@ -107,6 +119,7 @@ const errorsSection = createSection({
 export const manualSections = [
   gettingStartedSection,
   ownershipSection,
+  lifetimesSection,
   typesSection,
   structsTraitsSection,
   collectionsIteratorsSection,
