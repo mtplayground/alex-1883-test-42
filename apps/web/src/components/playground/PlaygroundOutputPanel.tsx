@@ -42,6 +42,7 @@ function ErrorDetails({ error }: { error: RunApiError }) {
       ? `retry after: ${error.retryAfterSeconds}s`
       : undefined
   ].filter(Boolean);
+  const hint = userFacingErrorHint(error);
 
   return (
     <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm leading-6 text-rust-600 dark:border-amber-400/40 dark:bg-amber-950/20 dark:text-amber-100">
@@ -49,11 +50,36 @@ function ErrorDetails({ error }: { error: RunApiError }) {
         <AlertTriangle className="mt-1 h-4 w-4 flex-none" aria-hidden="true" />
         <div>
           <p className="mt-0 font-semibold">{error.message}</p>
+          <p className="mt-1">{hint}</p>
           <p className="mt-1 font-mono text-xs">{details.join(" · ")}</p>
         </div>
       </div>
     </div>
   );
+}
+
+function userFacingErrorHint(error: RunApiError) {
+  switch (error.code) {
+    case "code_too_large":
+      return "Trim the snippet or split it into a smaller example before running it again.";
+    case "invalid_body":
+    case "invalid_field":
+      return "Review the snippet and run options, then try the request again.";
+    case "network_error":
+    case "upstream_timeout":
+    case "upstream_unavailable":
+      return "Try again in a moment; the run service or Rust Playground may be temporarily unreachable.";
+    case "rate_limited":
+      return error.retryAfterSeconds !== undefined
+        ? `Wait ${error.retryAfterSeconds} seconds before running another snippet.`
+        : "Wait a moment before running another snippet.";
+    case "upstream_http_error":
+    case "upstream_invalid_response":
+    case "invalid_response":
+      return "The run service returned an unexpected response. Try again, and check the proxy logs if this continues.";
+    default:
+      return "Try again, and check the proxy logs if the problem continues.";
+  }
 }
 
 export function PlaygroundOutputPanel({ state }: PlaygroundOutputPanelProps) {

@@ -50,6 +50,9 @@ describe("PlaygroundOutputPanel", () => {
 
     expect(screen.getByText("Too many run requests.")).toBeTruthy();
     expect(
+      screen.getByText("Wait 45 seconds before running another snippet.")
+    ).toBeTruthy();
+    expect(
       screen.getByText("code: rate_limited · status: 429 · retry after: 45s")
     ).toBeTruthy();
   });
