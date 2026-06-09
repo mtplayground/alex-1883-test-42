@@ -12,3 +12,8 @@ declare module "*.mdx" {
   const MDXComponent: ComponentType;
   export default MDXComponent;
 }
+
+declare module "*.mdx?manual-raw" {
+  const source: string;
+  export default source;
+}
