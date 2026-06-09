@@ -1,0 +1,48 @@
+Architecture plan for issues #1-#18
+
+Product context
+- The repository currently contains only README.md and no PRODUCT.md.
+- The issues describe a React + Tailwind SPA manual for Rust learners with embedded runnable Rust Playground examples through a Node.js/Express proxy.
+
+Module structure
+- Use a TypeScript monorepo-style layout:
+  - package.json, tsconfig.base.json, eslint/prettier config at the root.
+  - apps/web: Vite React SPA, Tailwind config, MDX pipeline, routes/layout, content rendering, editor, output panel, tests.
+  - apps/api: Express proxy service, env loading, middleware, routes, Playground client, tests.
+  - packages/shared: shared TypeScript contracts for run requests/responses, normalized errors, validation constants, and content metadata types.
+- Frontend organization:
+  - apps/web/src/app for application shell, routing, providers, theme setup.
+  - apps/web/src/content for MDX files and generated/declared content metadata.
+  - apps/web/src/components/content for reusable MDX primitives such as callouts and copyable code blocks.
+  - apps/web/src/components/playground for editor, run button, output panel, and MDX embed wrapper.
+  - apps/web/src/lib for API client, heading extraction helpers, and test utilities.
+- Backend organization:
+  - apps/api/src/server.ts for process bootstrap.
+  - apps/api/src/app.ts for Express app construction.
+  - apps/api/src/config.ts for environment parsing.
+  - apps/api/src/middleware for logging, CORS, rate limiting, and error handling.
+  - apps/api/src/routes/run.ts and health.ts for route modules.
+  - apps/api/src/services/rustPlaygroundClient.ts for upstream integration.
+  - apps/api/src/validation/runRequest.ts for request validation and code-size caps.
+
+Shared types
+- Define RunRequest with source code and future-safe optional fields such as channel, edition, mode, and crateType if later needed.
+- Define RunResult with status, stdout, stderr, compilerOutput, and optional duration/upstream metadata.
+- Define ApiError with stable code, message, and optional details so frontend error states and tests do not depend on raw upstream responses.
+- Keep max code size, timeout defaults, and accepted request fields centralized in shared constants where both API and frontend need them.
+
+Dependencies between issues
+- Foundation: #1 creates apps/web; #2 creates apps/api; #3 adds shared TypeScript, linting, and formatting after both app skeletons exist; #4 adds backend/frontend env conventions.
+- Content system: #5 MDX rendering depends on the web app; #6 layout/navigation and #7 theme/content components depend on MDX; #8 seeds content after navigation and components exist.
+- Playground backend: #9 implements the upstream Rust Playground client after the API skeleton; #10 exposes /run using validation and shared contracts; #11 hardens rate limiting and upstream error handling.
+- Playground frontend: #12 adds the editor after the web app; #13 adds the /run client and output panel after the backend endpoint exists; #14 wires the complete playground into MDX after MDX and frontend playground pieces exist.
+- Tests and release readiness: #15 tests the proxy after validation/rate limiting/upstream handling; #16 tests key frontend states; #17 verifies edit-run-output end to end after MDX embed and API path exist; #18 finalizes error-state review, env docs, and self-hosted deployment notes.
+
+Key design decisions
+- Prefer Vite + React + Tailwind for the SPA to match the issue scope and keep local builds fast.
+- Keep the Express service as a separate app instead of mixing it into the frontend dev server; this mirrors the production boundary around the Rust Playground proxy.
+- Use MDX as content source of truth and derive section navigation/table of contents from content metadata/headings rather than maintaining duplicated navigation config.
+- Use CodeMirror for Rust editing because it is lighter than Monaco and fits embedded examples well.
+- Normalize all /run responses in the backend so the UI handles a small stable contract across success, compile errors, timeouts, rate limits, and upstream failures.
+- Validate and cap request size before calling the upstream Playground, then apply per-client rate limits in middleware for predictable failure modes.
+- Keep tests close to behavior: API tests mock Playground responses; frontend tests cover editor/output/client states; the end-to-end test exercises the integrated edit-to-output flow.
