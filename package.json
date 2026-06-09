@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --fix",
     "preview": "npm run preview --workspace @alex-1883-test-42/web",
     "start:api": "npm run start --workspace @alex-1883-test-42/api",
-    "test": "npm run test --workspace @alex-1883-test-42/api",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "tsc -b --pretty false"
   },
   "engines": {
