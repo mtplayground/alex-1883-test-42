@@ -19,6 +19,7 @@
     "preview": "npm run preview --workspace @alex-1883-test-42/web",
     "start:api": "npm run start --workspace @alex-1883-test-42/api",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
     "typecheck": "tsc -b --pretty false"
   },
   "engines": {
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.60.0",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",

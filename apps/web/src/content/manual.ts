@@ -1,15 +1,15 @@
 import type { ComponentType } from "react";
 
 import ErrorsContent, { metadata as errorsMetadata } from "./errors.mdx";
-import errorsSource from "./errors.mdx?raw";
+import errorsSource from "./errors.mdx?manual-raw";
 import GettingStartedContent, {
   metadata as gettingStartedMetadata
 } from "./getting-started.mdx";
-import gettingStartedSource from "./getting-started.mdx?raw";
+import gettingStartedSource from "./getting-started.mdx?manual-raw";
 import OwnershipContent, { metadata as ownershipMetadata } from "./ownership.mdx";
-import ownershipSource from "./ownership.mdx?raw";
+import ownershipSource from "./ownership.mdx?manual-raw";
 import TypesContent, { metadata as typesMetadata } from "./types.mdx";
-import typesSource from "./types.mdx?raw";
+import typesSource from "./types.mdx?manual-raw";
 import { extractHeadings, type ContentHeading } from "../lib/headings";
 
 export interface ManualSection {
