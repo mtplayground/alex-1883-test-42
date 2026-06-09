@@ -5,7 +5,10 @@ function HomePage() {
     <main className="min-h-screen bg-stone-50 text-ink-950">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8 sm:px-8 lg:px-10">
         <nav className="flex items-center justify-between border-b border-stone-200 pb-5">
-          <Link to="/" className="text-sm font-semibold uppercase tracking-wide text-rust-600">
+          <Link
+            to="/"
+            className="text-sm font-semibold uppercase tracking-wide text-rust-600"
+          >
             Rust learning manual
           </Link>
           <span className="rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-ink-700">
