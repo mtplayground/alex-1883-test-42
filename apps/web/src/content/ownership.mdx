@@ -1,61 +1,216 @@
 export const metadata = {
   label: "Ownership",
   title: "Ownership keeps values predictable",
-  description: "Learn how Rust tracks the lifetime of values without a garbage collector."
+  description:
+    "Learn how Rust tracks values, when to move or clone them, and how references shape practical function signatures."
 };
 
 ## One owner at a time
 
-Rust values have an owner. When the owner goes out of scope, Rust drops the value. This
-rule gives Rust a clear moment to free memory and close resources.
+Every Rust value has an owner. When the owner goes out of scope, Rust drops the value.
+This gives Rust a clear moment to free memory and close resources without a garbage
+collector.
 
-```rust
-fn main() {
-    let message = String::from("hello");
+<RunnableSnippet title="A value and its owner">{`fn main() {
+    let message = String::from("hello ownership");
     println!("{message}");
-}
-```
+}`}</RunnableSnippet>
 
 <Callout type="note" title="Scope matters">
   A value is valid from the line where it is created until the end of the block that owns
-  it.
+  it. The owner is responsible for cleanup at the end of that scope.
 </Callout>
 
 ## Moving values
 
-Assignment can move ownership. After a move, the old binding can no longer use the value.
+Assignment and function calls can move ownership. After a move, the old binding can no
+longer use the value.
 
-```rust
-fn main() {
-    let first = String::from("rust");
-    let second = first;
-
-    println!("{second}");
+<RunnableSnippet title="Move a String">{`fn print_lesson(title: String) {
+    println!("lesson: {title}");
 }
-```
+
+fn main() {
+    let title = String::from("Ownership");
+    print_lesson(title);
+}`}</RunnableSnippet>
+
+The function owns `title` while it runs. When the function ends, that `String` is dropped.
+The original binding in `main` is no longer available.
 
 ### Why moves help
 
 Moves prevent two bindings from both believing they should clean up the same value. The
 compiler rejects stale uses before the program runs.
 
+```rust
+let first = String::from("rust");
+let second = first;
+println!("{first}"); // this does not compile
+```
+
+<Callout type="warning" title="Read the move error">
+  If the compiler says a value was moved, look for the assignment or function call that
+  received the value. That is usually the point where ownership changed hands.
+</Callout>
+
+## Clone when you need another owner
+
+Use `clone` when two independent owners really need their own heap-backed value. Cloning a
+`String` copies its text into new storage, so it is explicit and visible in code.
+
+<RunnableSnippet title="Clone a String">{`fn main() {
+    let original = String::from("borrow before cloning");
+    let copy = original.clone();
+
+    println!("original: {original}");
+    println!("copy: {copy}");
+}`}</RunnableSnippet>
+
+Cloning is useful for boundaries where the caller must keep using a value and another
+piece of code also needs to own it. It is not the default solution for every ownership
+error.
+
+<Callout type="tip" title="Prefer borrowing first">
+  If code only needs to read a value, pass a reference. Reach for `clone` when you need a
+  separately owned value, not just a temporary read.
+</Callout>
+
 ## Borrowing values
 
 References let code inspect or change a value without taking ownership. An immutable
 borrow uses `&T`, while a mutable borrow uses `&mut T`.
 
-```rust
-fn count_letters(word: &str) -> usize {
+<RunnableSnippet title="Borrow to read">{`fn count_letters(word: &str) -> usize {
     word.len()
 }
 
 fn main() {
     let language = String::from("rust");
-    println!("{}", count_letters(&language));
+    let count = count_letters(&language);
+
+    println!("{language} has {count} letters");
+}`}</RunnableSnippet>
+
+The function receives `&str`, a borrowed string slice. It can read the text but cannot
+take ownership of the caller's `String`.
+
+### Multiple immutable borrows are fine
+
+Many readers can look at the same value at the same time.
+
+<RunnableSnippet title="Many readers">{`fn main() {
+    let title = String::from("Ownership");
+    let first = &title;
+    let second = &title;
+
+    println!("{first} / {second}");
+}`}</RunnableSnippet>
+
+## Mutable borrowing
+
+Use a mutable borrow when a function should change a value owned by its caller. The caller
+must mark the binding as `mut`, and the function takes `&mut T`.
+
+<RunnableSnippet title="Borrow to change">{`fn add_section_suffix(title: &mut String) {
+    title.push_str(" section");
 }
+
+fn main() {
+    let mut title = String::from("Ownership");
+    add_section_suffix(&mut title);
+
+    println!("{title}");
+}`}</RunnableSnippet>
+
+Only one mutable borrow can be active at a time. This rule prevents one part of the
+program from reading data while another part changes it unexpectedly.
+
+```rust
+let mut title = String::from("Ownership");
+let editing = &mut title;
+let reading = &title; // this does not compile while editing is active
+println!("{editing} {reading}");
 ```
 
-<Callout type="tip" title="Start with borrowing">
-  When a function only needs to read a value, pass a reference instead of moving the value
-  into the function.
+<Callout type="note" title="Borrow for the smallest scope">
+  Keep mutable borrows short. Create them near the operation that needs mutation, then let
+  them end before later reads.
 </Callout>
+
+## `Copy` values are duplicated cheaply
+
+Some simple values do not move by default. Integers, booleans, characters, and tuples made
+only of `Copy` values are duplicated when assigned or passed to a function.
+
+<RunnableSnippet title="Copy values">{`fn double(minutes: u32) -> u32 {
+    minutes * 2
+}
+
+fn main() {
+    let minutes = 10;
+    let doubled = double(minutes);
+
+    println!("original: {minutes}");
+    println!("doubled: {doubled}");
+}`}</RunnableSnippet>
+
+`minutes` is still available after the function call because `u32` implements `Copy`.
+`String` does not implement `Copy` because duplicating heap storage should be explicit.
+
+### `Copy` does not mean all data is small
+
+The rule is about type behavior, not just size. If a type manages a resource such as heap
+memory, a file handle, or a network connection, Rust usually makes ownership transfer
+explicit instead of silently copying it.
+
+## Practical function signatures
+
+Choose a signature by asking what the function must do with the value.
+
+- Use `&str` or `&T` to read without taking ownership.
+- Use `&mut T` to change the caller's value in place.
+- Use `T` when the function should consume the value.
+- Return a value when the caller needs a new owned result.
+
+<RunnableSnippet title="Choose the right signature">{`fn word_count(text: &str) -> usize {
+    text.split_whitespace().count()
+}
+
+fn make_title_case(title: &mut String) {
+    if let Some(first) = title.get_mut(0..1) {
+        first.make_ascii_uppercase();
+    }
+}
+
+fn into_summary(title: String) -> String {
+    format!("{title} is ready to study")
+}
+
+fn main() {
+    let mut title = String::from("ownership");
+    let words = word_count(&title);
+
+    make_title_case(&mut title);
+    let summary = into_summary(title);
+
+    println!("words: {words}");
+    println!("{summary}");
+}`}</RunnableSnippet>
+
+The first function borrows, the second function mutably borrows, and the third function
+consumes the `String` and returns a new one.
+
+<Callout type="tip" title="A useful default">
+  Start with borrowed parameters for read-only helpers. Change to `&mut` or owned `T` only
+  when the function's job requires mutation or ownership.
+</Callout>
+
+## Try it prompts
+
+Use these edits to test your understanding:
+
+- Change `print_lesson(title)` to `print_lesson(title.clone())`, then print `title` again.
+- Add a second call to `add_section_suffix` and observe how the same `String` changes.
+- Change `u32` in the `Copy` example to `String` and read the move error.
+- Rewrite `into_summary` to borrow `&str` instead of consuming `String`.
